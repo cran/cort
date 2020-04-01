@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="date" content="2020-03-31" />
+
+<title>2. The Copula Recursive Tree</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">2. The Copula Recursive Tree</h1>
+<h4 class="date">2020-03-31</h4>
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>In this vignette, we will use the Cort algorithm to fit a copula on a given simulated dataset based on clayton copula simulations. We will show how the algorithm can be used to produce a bona-fide copula, and describe some of the parameters.</p>
+</div>
+<div id="dataset" class="section level1">
+<h1>Dataset</h1>
+<p>First, let’s create and plot the dataset we will work with. For that, we’ll use the gamma frailty model for the Clayton copula (but it’ll work for any other completely monotonous archimedean generator), as it is done in the <code>copula</code> package, see <a href="https://github.com/cran/copula/blob/6e0a5f0332776c24b2f53a81b11a8c66cc3f996d/R/claytonCopula.R#L82">there</a>. The following code is directly taken from the previous link, from the <code>copula</code> package :</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">psi &lt;-<span class="st"> </span><span class="cf">function</span>(t,alpha) (<span class="dv">1</span> <span class="op">+</span><span class="st"> </span><span class="kw">sign</span>(alpha)<span class="op">*</span>t) <span class="op">^</span><span class="st"> </span>(<span class="op">-</span><span class="dv">1</span><span class="op">/</span>alpha) <span class="co"># generator</span></a>
+<a class="sourceLine" id="cb1-2" title="2">rClayton &lt;-<span class="st"> </span><span class="cf">function</span>(n,dim,alpha){</a>
+<a class="sourceLine" id="cb1-3" title="3">  val &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">runif</span>(n <span class="op">*</span><span class="st"> </span>dim), <span class="dt">nrow =</span> n)</a>
+<a class="sourceLine" id="cb1-4" title="4">  gam &lt;-<span class="st"> </span><span class="kw">rgamma</span>(n, <span class="dt">shape =</span> <span class="dv">1</span><span class="op">/</span>alpha, <span class="dt">rate =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb1-5" title="5">  gam &lt;-<span class="st"> </span><span class="kw">matrix</span>(gam, <span class="dt">nrow =</span> n, <span class="dt">ncol =</span> dim)</a>
+<a class="sourceLine" id="cb1-6" title="6">  <span class="kw">psi</span>(<span class="op">-</span><span class="st"> </span><span class="kw">log</span>(val) <span class="op">/</span><span class="st"> </span>gam,alpha)</a>
+<a class="sourceLine" id="cb1-7" title="7">}</a></code></pre></div>
+<p>For reproducibility reasons, we set the random number generator. This vignette has been compiled on a version of R &gt; 3.6, so the fix of the random number generator added in this version is used. To reproduce results from an earlier version, just use <code>sample.kind = &quot;Rounding&quot;</code>. The following code simulates a dataset and then visualise it :</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="cf">if</span>(<span class="kw">as.numeric</span>(version<span class="op">$</span>minor)<span class="op">&lt;</span><span class="dv">6</span>){</a>
+<a class="sourceLine" id="cb2-2" title="2">  <span class="co"># the way of specifying the random number generation changed. </span></a>
+<a class="sourceLine" id="cb2-3" title="3">  <span class="kw">set.seed</span>(<span class="dv">12</span>,<span class="dt">kind =</span> <span class="st">&quot;Mersenne-Twister&quot;</span>,<span class="dt">normal.kind =</span> <span class="st">&quot;Inversion&quot;</span>)</a>
+<a class="sourceLine" id="cb2-4" title="4">} <span class="cf">else</span> {</a>
+<a class="sourceLine" id="cb2-5" title="5">  <span class="kw">set.seed</span>(<span class="dv">12</span>,<span class="dt">kind =</span> <span class="st">&quot;Mersenne-Twister&quot;</span>,<span class="dt">normal.kind =</span> <span class="st">&quot;Inversion&quot;</span>,<span class="dt">sample.kind =</span> <span class="st">&quot;Rejection&quot;</span>)</a>
+<a class="sourceLine" id="cb2-6" title="6">}</a>
+<a class="sourceLine" id="cb2-7" title="7"></a>
+<a class="sourceLine" id="cb2-8" title="8"></a>
+<a class="sourceLine" id="cb2-9" title="9">n =<span class="st"> </span><span class="dv">200</span> <span class="co"># taken small to reduce runtime of the vignette.</span></a>
+<a class="sourceLine" id="cb2-10" title="10">d =<span class="st"> </span><span class="dv">4</span></a>
+<a class="sourceLine" id="cb2-11" title="11">n_trees =<span class="st"> </span><span class="dv">5</span> <span class="co"># taken small to reduce runtime of the vignette.</span></a>
+<a class="sourceLine" id="cb2-12" title="12">number_max_dim_forest =<span class="st"> </span><span class="dv">2</span> <span class="co"># taken small to reduce runtime of the vignette.</span></a>
+<a class="sourceLine" id="cb2-13" title="13"></a>
+<a class="sourceLine" id="cb2-14" title="14">data &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">nrow=</span>n,<span class="dt">ncol=</span>d)</a>
+<a class="sourceLine" id="cb2-15" title="15">data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>,<span class="dv">3</span>)] =<span class="st"> </span><span class="kw">rClayton</span>(<span class="dt">n=</span>n,<span class="dt">dim=</span>d<span class="dv">-1</span>,<span class="dt">alpha=</span><span class="dv">7</span>)</a>
+<a class="sourceLine" id="cb2-16" title="16">data[,<span class="dv">2</span>] =<span class="st"> </span><span class="kw">runif</span>(n)</a>
+<a class="sourceLine" id="cb2-17" title="17">data[,<span class="dv">3</span>] &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span>data[,<span class="dv">3</span>]</a>
+<a class="sourceLine" id="cb2-18" title="18"></a>
+<a class="sourceLine" id="cb2-19" title="19"></a>
+<a class="sourceLine" id="cb2-20" title="20"><span class="kw">pairs</span>(data,<span class="dt">cex=</span><span class="fl">0.6</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAMAAABNUi8GAAAAxlBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZrY6AAA6ADo6AGY6OgA6Ojo6OmY6OpA6ZpA6ZrY6kLY6kNtmAABmADpmAGZmOgBmOjpmOpBmZgBmZjpmZmZmkJBmkLZmtttmtv+QOgCQOjqQOmaQZjqQZmaQkLaQttuQ27aQ29uQ2/+2ZgC2Zjq2kDq2kGa2tra22/+2/7a2/9u2///bkDrbtmbbtpDb25Db27bb29vb2//b/9vb////tmb/25D/27b/29v//7b//9v///8lfihqAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAgAElEQVR4nO19C2Mkt40mJGdGe3Fya8meJJv1emwncUbes33Te8n5LPmk+v9/avtRDxAEQJDFqmJ344sz6maRIEh+BQIsFhs6h6NhwNYKOBwanKCOpuEEdTQNJ6ijaThBHU3DCepoGk5QR9NwgjqahhPU0TScoI6m4QR1NA0nqKNpOEEdTcMJ6mgaTlBH03CCOpqGE9TRNJygjqbhBHU0DSeoo2k4QR1NwwnqaBpOUEfTcII6moYT1NE0nKCOpuEEdTQNJ6ijaThBHU3DCepoGk5QR9NwgjqahhPU0TQugqBPAF+FH8L01/cAb7n8Xbe7ZwXthAIkvXv54iNXcVPI7R2xezbpnUsg6MvnH57/x0f8gaTv3u5H4as4veue7+45Qc+//4UtQNK7l4fbj0Ric8jtHbF7tumdSyDooWO+/oA/kPQDkC2Y0l+//rd7TlBoV8UKXr/56WQjSHpTyO0dsXu26Z1LIOjTfl55/Ap/IOndNNuE6bv7cA4bLjz++x2erKYCz3c3QU/3YknFTSG3d8Tu2aZ3roSg+1mGyb+/tQWCvvmFFfT0JpzELoSgQe+I3bNN71wCQdOT2PO/fODy7516AG4SO3Qn5xMc0p5wHPByCVN82Dti92zTO5dA0GQYQFx0nC2woOMFcs9P6QfbEZT44vyDJKq51D3b9M4lEPS0jHHoDW4hZZ/+SCzlmJ9dZjpc2AX5p/RHZiGFqbgp5PaO2D2b9M5FENRxuXCCOpqGE9TRNJygjqbhBHU0DSeoo2k4QR1NwwnqaBqXRFCpLbnp9QS1hM16YV7vnEXfGuEE1eAE3RxOUA1O0M3hBNXgBN0cTlANTtDN4QTV4ATdHE5QDVdHUNgezWrTmDpbqwIwg2YblKwFED5vAxC/bIKGO6f5krWQPwZgzBhn4oqB/A3wB+gABBHLYQuCAv40NPmYWG5Ir4qgR6bAmB3wFZIvLslJk7QZv8DpfwAwZudELYANCDr17djgodluQW0EhZGaEDCFkibu02ILCj1DO8RPenssgZUJim97GAwmsqDzBK9cshZyxyBgZBdM+Ix9zJ2PeAvaiwmMNaA/eWIL1SmUkVEMt+bISuiCGd0JmuFaxmRh86oEZa7FBIXB+2QzWvlZgV1lIrKqZu9wJyj/GSWwRIp9T46MOj8TYdQQG/H1K9wX2pGPpS0opHINU/wcDTYqWQvaGAz+j4l5+fElUzVjQQF7EUFt4qhW69aFfVCYms1LB7eghRaUlTSjMcBVNZGWNbYZFrRcrQWEcjIF4eFN6ATVralVCvpubR6wBVAQRtOXZg4jerlqaASILoxNhVkaXCBBJ5sF5DtnzuIVJhByygMRXx180MlYDlLDeHdh6nCq1a2EzhEnw9mvrU1ulhM06KMxjUy+wFHCbEF5OvFT3eiDkuV5qDXzJbGNBR2WP5H7zT5Fe767+e4Bbg0nil0eQbXYcZ7JynAVJitMDOwcbzcLK90HUbWUj+yTpNdvPh7OJH354y9pgeWqFJesBXGKV0qsM6eGpjvPJ15Anc2GSnps9vLFx+Hku7SI8sq3hmRBlQILMpQh6Omj4OUujLUJKjnowF3tLejz76/QgqpLmtwi/RLahB6H2ctdSp2lhwqkO59f4ugOR4perQ+aWHOvGUJTw8h/iR3h4fH8oj24UhR//BeiWULTpqSKdUvWgkBQvYjgCxRYVtt2O5o6PelclqFrEBT6/WFTYCTFp/x+0Gv0QfVRF1wiEvqnW8ZJ4QgKRMdpg+TxOx2wml1ag6DJcng16fRparh899bVYYGStcBbUDW3+Ig+aUEp09QMqgWdvtL3mGiGOahA0MTCb/iNbCsEem+W4uIIKmcOGJpfV1SbZv5sFZCYDYSbpwhLWNBYP2XPiNofT8cJ/8bw2zRXQ9CpJ4UyCQm6V0AzMORlrREz2O1Y0Fhk3A7kfWozD7nW/97XVS4zKXkIRwVbYBEUpjADR0dR3LuMS9bkZ02Ciu7TQL6YodSjJyWHH1C6wiApIl04iU5/IGaRXpdy3WZB4wUwGC5M2aqF9vUIGnIMuoiS/b98oKlaUMPPe10aQelmIcmC6jMSeyFxSfdBoeOCdgjSZ+77iSqUtSkQhUgJ01JuhzoVNy+1PvF8d7U+qHXaTjz60GvjLqkEjfelTbUFFrQaqvug+O5G9xr/sCh+vDuz2lVL1kJ6DCLLhi5kWtA4h2WhPkxghCMNRWWLUHOKDz6PLQFN5YQFLat9rZK1YBoDxmwxk6m9McHCiijCxvNBxDB5Jp8YZqAaQYnTFK7FU7dFqskJqs3l5Gt/iAL1VhPl4vQoBDOpExQOnhvg/ffzsZAFDe6o6P0/8QZzgmaYwCD45ByoPsUg3vJoX9SiG/UYn2mnSmWgog8a3IXojjomwPCPWpMTNEebqMOFS3K2DpOL0yClTvwMSZreS7u5BkFHw05FkU5Lv7XtBKXaWKeaqKv5a0w5ytA0QWV9sU/MTJolXV2BoP2CEkykZASFFtSiTa4S65esBX4MhoiDL6FrHZBjcgm5QhMvuUx8Cfn2mGTQbWmlc38dCzqFQUEMx3rvWi1+/GIQuvBDSrynpEh0VqPa92zRpHBO8GSyqB75qOSDort0IhjreqeftRUqsH5JETvLOwC8BpEFZXILk5QiXrGgqjbWaii5Af0fZdqQoGP1wRJDtrd8GQT9L9NLKrwGBm0yFY4elLLihEHLq4vuqCAfinq6ig86/cnxtRPaFCmxakker/8JlQiaGFbJxEb51HXzeMFFUi1VzSAGmappKi3u5fkEDds2vPAeTERm434BBH1+B795V4WgEXVoqXBNRyGy4YjQYgs6GSTE0L7W6STo8rXRmhZ08I0RP3Ocn3IN1im5g/vj36fD31+//e2+pb/78ZB++9M7uP2xz/V48+X/ez+ToFOvgU68YGlZN7VF2qSLoimTWPRBe5gulqCmDxqct1QksWmCPt+9OW6cfrz50G+zOm202t3+CeDNsKf6//7Svc4kKPaT9HlcHz0xGFCbXGhBwzmTWNZUO4zqzLjTum5aVwDcxeXatFfyEQ7bU488fYTP9oz89eFgTHd0P+BcgqJRJo69URwEfyMB0vYlxufNqXiaObvB1eu5YFrmEqWWaYOVGVLw5C41k+mEUg1WL/kEb7sDH78aU3Yngt6H+WYTdPqid5cgjT6kj4jB05Uzc8WUGGOR4b9SqzXHgioMpc9ow4+K4x/j9WvDfuVVCHok3sC+13/+8Jc/wImgXzH5CjWA+Eq+n0T7XpdQy4JyDekn1OisuDkyiwpjE67eh1kW9OXh5OkZxnsV23uwlc93BzP6+m3/zGtZgp5ScjxIVbgpwwyCcrJPbNg6SKKxWqkkWu757r4hC3p0P090fISbP//1h593yxKUvZvJytIcCrGzWRWCjl7wOKMqlRgkzdJm6qaJp4V3TFxqd/P3dgi6D+C/ezjE6y/Hf/dMXJSg0Spd38uArutr8Hoy/9B0LkEx66H3+4JFUXTdKC5fm+nWHleXpmqD/SJ5YAq9vre8M7cSQZ/g02NE9PJw87d9EP9usSkewi/h/R8QNnKz0HcaDATSOqHpMwmKWD+yoRt2AZFbzSavQBv8uGisGsYOK5951qFZecm9yTzdLo/Dvqu3ixBUWAgCJn94kn1gUul3prqENuUWFCs0KjqtN+WJy9VmCMqGM+sA2czyZ1qD5KZPt9v1K/Kv398BfPLlPw5rostZUEtZsnWMMjJ/PCr4oGy0PPE1S6dyC4rdX2Qz5/CzeQu6DLQxSGoXz9cp1zNDm9LOEWQAJW2mqEzHAMKqa4y0ExTClBKvTarEKKEGQfmK132SFFSZiidLtDngSk+3ow93On5w80zlmhaUCMSO9WBCS9TJtrwwukDLWNCrPd0u4ienpmAR5hqK6gQNJoHBCS0y6Fmu64mhZS8QmbTprvt0O+abVs5cKEubBTpnVQt6+Fu1CYIFvcLT7VarUL+4oDrLWtCCmkpEXfHpdgvWpS+NrkBQrESqBnPnAPux45pbDo/iBbcyS4aajYsWQBzdRTrn5IfiyEnNbNMGbfOMdtmVKJnWpv2StZAaA4MJULMI8lEAtr4FHXe3V7WgaF/fcrb/fErWghYkQZzIFlb5mYj26bMnUZ16GPY5QYeWgYScFm1QSDT9bwE4QQF/MPQzXcnnLXCi2rUtaDdM891kR6WaTAQdN6KAtd8K4QQNrZppck8XSE15K/ugXTe8fDFuMpJneitBu5DpCynuBAU1MS2Ff+KUMinrT/H4BTb1RrT0wyiq9rq8qk37JWtBIGiwU61IGE7jeJsWsOAUT5xgqZFpgsLwX9fhXXWLwE+3C8ZsMguL1JpmxJKdg91FZdiTBMVT+3hXuw9aE4oFhQVnrU0taNcRfkpuqMWC4sWAhS3oWZWsBW0MoNOXCmdqD2yN1cRbFBgtXjFBIWiH+6DVkR0P4eyWAuKjFZjmRl6DlToHUBweXRK1Gd3O+j/dIMEJmtKGmlMTP8kyI2CGDjMtu3ywWucMr9TF/ozcOaPz2TPUCboUTASdzEW28KgQE9HTBf+UOpUxPlbKIOjofK5oQp2gkjbjimGJD2BzAzgNVuscvG5PLsjahMvybkGXQoYFLRCeW3AbgnaDr8E7mpI2q8zrqgYtl6wFsw9aoqp5nxObtn7n0CV75fNqoRGvQfsla0GLA8JvJQtOKj+ZixsTlPqhQucM6w8rm1Ba25W+1Tl9SQU3UV7FqkCiNl6D9RE+VeLVJduXVgOp7Grf6uS/GaQM+yzZ64D+yFpsTVAIGcp2DsqxqQW95rc6S5iq+2WMBQ2uctc3saDBNM90Tul+jQoQLOgVvtUpLq0zZWgugeRGLTYn6LHekYNR52xIz7g/rvitTt2CyhuTA1tYFvYr9a4G5GSG2mzKT4/izdqY4vmiprVB0LFyxoJuokyvQevHLy6CEoIuh3YIGmnQljbtl6yFhsegLXXa0ma1ktujWW0aU2drVSByL9ZYqHc4SrHKQr3DUYpVFuodjlKsslDvcBRjjYV6h2MFOEEdTcMJ6mgaTlBH03CCOpqGE9TRNJygjqbhz+KrwTtHQTnNNihZCw1v2GlLnba0ab9kLdkNjwGjzsoattI55G2awvJ5ReZa7VS91h+kbGUMGA1idaznyS+hTm35Ga8ezD52dH7Jwvcj5HeHTGeyxoW2hkTQsZ+UF5fruQcsd2a9y8Lea+SDUm4DC0oVAJqUVS9QIYIY5rX1syBofGajWBRogfzq+cP2prR8unC9PrVIlmQYUmP9c0uGY5Erz3o2Oif7LAhKJwe5dAl9IjthsaB5FUX8hOiLYFFkIRmoWjJgEXSKzYjEJA8MSoQd7RJUzhSky7/XEQuALiJm1t0b8JSU52Z0+Su1LrntTqN2SaTqcLiqWVwceentPTOCRmnUthr6CgZTKxKTFy5nIVMYN09p83goX/T32iGoxYJCJ5Smp7PJh9FEM0v7BGWcuTABxh90TVECd+AMggYXdQs6sVf3WEC41g5BjVYgNgCEkPHxGHHd50VQ3YIO88doIjVJgYyUoUjIMBjIaTQihlp9soYIavSjYheKEDLhQdAvLRI0U6fxTKWQn4UMtU7xKj+BZo1WxCzGWa0khUolpwnCYEDZb/zUEiVJ/d4gQdN9kT89q31iunszuG+YB1QLagie0jCUfL67+e4BbukLeLwzYprgjZoJ7qugwdbIt6DFi3J8xaa7t3DZWtdAyriOBX395uPL5x+6lz+Sl+wVH0Nlq3FSMHE9I/PiKPC5IN8NYCrgzZTFgkr5VQ3MGUukJ8SwePni4+EF++gl+7TvUslCKLkt2qyFogEpPYk7CidVdYQM/BxorzkDK1jQ6JgS1f0oVSurxAUQtFhvzoKKgtM5ltZ4UR/0CZI+qJa4HHUugaAz65HTDBa0pKZCLErQjJKM/Tct1JXWViptCdgIOtv+cP3Jp+mVqtsCEjkUVBnsopKTD0r3gya6Aviv6Q4K00qMxKowEVTZZpj26eV8EF9IBkZpFQtMiGVVNg/zS+YGNqnmQxf/CsClWlAm1jHO4FymdBRvGqtoYHOq386CyiVVEcyUnxQcPe4TxJ4DQROdE1k0yx5g09WkBU3LH/lpYrV6gy4cJB0QnURWclsbFdHuRST2DAia8MDTHlF4KaOVBZ0za34mzRccu3ykS0qn4drqtObK9MjP3YIqzS22oHLeEiOBU/OHek0LKp2Ga5vFTDVl8zOW2CpBTbnDC2UxCi1UMsUL8uxGJq1WNuwWlJ6Gq89ijO9ZXf9zJmhajrFf6WWO3mKQZLiP7C1JxgxFMJQUTsNV71V2QbQ2LpOgqozk4pzFgop8NSpRgEUJmlHSPj8Fv3laqMTlERRYMZZ2qmEJNZtG70yPe9JFDOnlEstKoq0uuvMyLPQbVpRsGlwEQek7XNNG9lAw5SLX10rncC4pIzdSJd2oSo8NFyl57KTp+VL8ekBYZuTnOAT5mlwGQXE/oW5AjAlu+/iGBuAYmuicyTyIckMbEy7E51rK7Ql6olrCgtJnE6PFoKZDqU6YoBolqGXXOmucRj4Q4ggWNJahd0703IcQdkhDakBQztDfa21YNpY0vWAMg1M1ERXCD3JtU9HAyPDabACOoJaJUciDiJHeI8zIUDvHtCQ/VY3EJyyopFMDBDUrXVgrmYyolDYJOqfBY3mb86el6FcTlZuzM8U3J2h26RoqMxNUswQdv6btqHwpt21855SSrLRoh5u9KkGn7Xb54TeaKkwGV71wPgRNemPqo8/MtvEbFQqXSqwmHNXEfT0bC5qlMrPZh5dVpImK///9HcAn/5FTRCUoumDw/syXlAJ1LGjmMItxURM+6AwA366An7lu1hz8+nCaJN5mlDEMiGzJKo2mIGSWQHaWliTicayjQRMEJeun1uqWI+gj/OvPXfdfd/CVvUx6AGWHjlmen4tanYOXT6JEqwLbEbTYhQ4LCRY0Q0ZVgr48vDnuLdzlmFCjBTUXLmkRKhl3TqFY1nQUxW1FmOuD5q2CTB7ozCPuQ2ldRjt2cH/8+3T4++u3v91r8rsfD+m3P72D2x+DvM93dQmaI0NYvteLT8/lOB/UHisBV9Ucy76xBU15VfE0kSCoTasigj7fnazj482Hfp/WaafW7vZPAG/CTdkDmbO1MatDJpIEQ1OLPoDe5uItqC1GEx7spW6PwmvlUq0lBa+KmRGMy6Cp9WGIZdjb8Xh0LI88fYTPfjlGRPcHMkYbCp/vosMAFLAETVgd5fkkS8WUDbQEm4wSnB7ZTpcaFW1KUMGC8veg7TZj/HKUwPHX3o6no2O5Q/HP7kRQai2fs2IklqCSA4QuC1KUYFFpanKjgvTU3yaTvcy2hT6fXZygr19T84LMmNiVedXFPcHwE09fZQR9fb+3i8d/Dl/++cNf/gAnghI27mP4+eugEj9BuGh49mKii9A58lN/TaZeITCjEdmnJQn60q8J0ulOsHIzqktKinfb2MtOONjKU/jz+m3/UCwm6Ov3cJNjP/N8UHZMhaTM/uUIbnQ4cis7lUj4YaVyM0o+393rFtRsLOm0n6N2YjAzRB3czxMdH+Hmz3/94eddTNDX9/CbHyUBBgVNo2YSp25aiz3YlAWVrvRf1dh1RqMWnuJ3N38XCXr6KLibtAOpY2KnWM0nSY833x0XOvvlzj0ZKUH3Sf/6i1he0jCtTsKBZHNSB1Lsd7k7xV6PdtHph87zF237AUthK/n6Pgpxk/SAuEmaj5mafhjTUErQJ/j0GBG9PNz8bR/Ev4un+Kz1JU4DyZO0j780KSnr5Ub/h7lCiSppKKRbFhpLsWzJ4jlcLoju19Ie2NvH0/32OGzMehsSdHC7o4VRDZz+43pDxc4qyJYuUk6DjrUt1DqtQFD5dLtqgPFfLZgF9nbP0mbXE+/1uGfpy38c1kQxQZ+gEkFHfsa9VWW7uVGdRSoYRHP2M/Lv2rSgvNcolsPP4rgQIZK70hgYoc0APD/p/Mp3WGr2NKiT0TmyA8UKAZGh+vcShSqVZDzwKQXIyjXnHKVDp/MjKHOJsaDcQvAw+kS6TGlOAz4X37XDLUFjKWHKZGNhW102GEpmnW6nr4pA0Jr41gvGQvbJ507xiyDThxbpIeQWPAhlPkpoI0Y20y0BUxJDUNFCMb7LkgTNPN1OvVtDfkYzX/AMU37Yd64EHRxSxAJyPZ49RirarWB8JbPsNJNNPlfsbYirS4ifDFVzkS6ZPN3OVAt3z8erUMEkL04VZzrFhyE9N2cr65qZT+zmdw50gbnoggkPyHdRwhwNrCVTp9tlViMOAZpEoBPEh312PgQNtY5dH8O8mNvA2Z0jeBv4ZUl10l9vmUk73W4mL4a5ur8jI4sx1hEaTcbENk3QnoBBa1E2ws/ZTRE6Z67cnp9hHIFnfmphUaWLElQpWaE3u25cJoyG+DSsEIeQcf5mCQoDAWGyO3REZ5lKRhE6AzH+Q7nc6N4LeRnQArSQ0FrrrJLZxfmZm50Rxx4BalylMdgUPMvGAQwsTX/FZNryW1bFgjK52SSgUxxiMfQLixsSNL8QxCUZbwdfIA3ES3UztakKzYKy2WOLykmwbMVIqVMgQIjAI0mBLRkTgA5dIwQ1CIN4QLjVP02YredWR+48DfQTETCOuDo3p3spqQ1/Fc8BjFY0Gz8HGjXQULOk9fm8SXuDy3TeBI3LSxJUfkp9nugcjXQZkqyO7XkRtFS+luP8CVroM0kU0TunzhqlvfDmBDW74eUc5npZu7o2SgiqZbO2TjC1SnElaqHOVzESU36xoMKS5iWM8m16iS0zZ0lQrdt01y8tTu4c9QF+0aimBK1MUG4/qDlUKz+w4eItqGJ0jJ1mt6CSwExaafdXnqSCKrJL6jecib0posv9d1YEhehDp3VfSpgQZCoCsgIjc9Wld1gFTZSStmjTOF0cvSNtpMQOaZ2gLBXjzUu8YCPdg2+MZONQGapkxUSbW+z1WasoKMk2hTs+IAqjRDed9QK4KOyMCBo/Djx+NkzddD4mXSBWFHeOvp4ab4SQaxW6G40Rt3OwDDUt6HgF7djk/HPgLpE8tkT+8zawWVB77NNvRGB7cCSDvI1Yt6D0exBUxGtQ6Wcr9FKLPuh0QT4j7MRPmD5aBZ+nBS25q3DfMdNJwBhlTSTdOeEcjEXF9xClvcpQa6IJSxCUHx2m/ex8pFYpmqkmCVqyThNyjrsvsWhZvqFzgBsKRgxn8zOb1hJBhT0QrF8jeALGOpsnqE2rwPnjjKLm9MywoB2qzLYiqz9/0v2VUtQpyVKRNCecJUBodxUNNoHug2rlQjPG8A647EAKR/l0bUIXgXXK4vFRmlW4pyUJQ8n0W53UWI7bAZkMQ5yEN96llTjLICl/78zoWqrzU+ilRqVjdZIGmDUWwYaqFJRdK6GXkIt0ycRbndwNz81S5CO+/0HKe2wa4rOie4MEjX+FWLgfaQ51Cyhzr9PSUSWcAaQTWiS9oxXFdeBEaRCjd0QykS6pv9XJEsd80zDTFLmbx1E+VwsamyTLfthkc0ae6OtQgWryWEVZudomGUydcsSxmgUV3uqU/Bu+k9nq0haUR+sElT4qFrT/buAnnuc5aSkLOiSZN+/IM6ZqQcWa86rVoL3VaZccG4/ZnDoPghYImrggyrGZWENm6Zpw1xQ2bFGCVikZt2/GZi5GgwsiKJqRZ214m6WN8LSzxoLLQiXnHr/IuD95AnSRl0RQJKTOwJZIEcpcrAVdApdO0FlouHPWKrk9mtWmMXW2VgVmvKxmKCks1DscK8C+zEQX6h2OFZAmqLRQ73CsgPKFeodjBZQv1DscK2D7FQiHQ4ET1NE0nKCOpuEEdTQNJ6ijaThBHU3DCepoGr5ZpBq8cxSU02yDkrXQ8I6yttRpS5s1Sy7wo/GZGnCfrWXEa0Wtap2gm47VRgSdZ7xngyWoro/pBI2y9xoaJ+i2Y1U+08+1oFs2myOofqZqkQVNtA/IX0uZFcBYUPV9+/W0WbfklgxNW1CjLQTt/Z+EDP4AtAYJ2o2HDGyszbolAZif0lwJsg9K6Jq0gTD8l6pGudw8QfuxGgzqZtqsXPLEz00YKhI0ebAekdL/Z/c9uXztE3Q0olDqZ1fRZvWSmzHUYEHZr+Qa8PloIcAfGYnnQNCRn2t7o1sStD9BaePbsnoP0JO5pENRJOd3a4gWtB+s6yEocsFXbncdgkrCT/wUzCtKPR8ftNtu6WVTgo7f55zUMleD2hWzRxGprudZEPT0dX0T2gJBu9XDeRNBSxUKJ/g+KRFsza+1HvTOCQ8QXlebA57vbr57gFvDe5g1CTqus63UbsHNInlMK02CfDbYYqgb1dA4QceTV9cypKSW128+vnz+oXv5Y/qshZq2d2DoFq3GIRuTqcLTyylx+F+Y45wI2g/Vegwllbx88fFwzoLlrIWqzgHgdfvlmy5b0J6VmD7iylO2lkPjyK14VgQ9Kg/oTlt43Ym3oJbTaipb0GlXwAo3pzAGQ81BrKqeM15e+7la0K4P5qPOWkhxKvYJNvBBR+9sUwsqGYV6FtSgzTkQtBt+3AB31lKD1kQUP10oj0uKNaCmbH2GnB1BgytAEyprw263W90H7dPHuESId2tBNZDL1StM6+dIUBTsLatxWxZ0mDOWdkTlIOnkaSxVKzAfz5OgqzG0LYL2ng1sYUHN0Y9FL8F30zUwS18WNoJif33dIOkAy4F0S1C7XwtdfAO3aEENPrDFYiTzyJw8G4KG/thaQVLGociLELTrGQrzfgUvR4Pws6FOCP7w9xJNUx3dMyXoyRsam5/eHjNbmy7rUORFnAPonZvpUcUiAybTA5hEQcToMBdYVHkd64wIOo4UzVvTmgoW1HAo8lLe64maEz+XuC8VepjnK82CRk4ZHcSzD5LGFo6TXXKkylpGS9kPRV6IoAM5x4geXymuUp58Kk8AABeQSURBVNEAuCt5NcUTOhow3oU4cwuKFySGiZ5rGl+kVJs2So4mDBvQynGi3c2ySIm7HqmruJts4nkQlN7WyM8RiVjHgrZTEoJ/645bFYIKW+K1ugw5zoSgtEywxruUNk2WjOfJCiglKOsOzMYFEDTIWbUJrRN0mcfzhQRdaF3hIgg6Za873bVO0GmOF2LE2Z53zvyM3eKMYjmVnCtBUddUNSnNE7QP5CcnJ3R35m94ZwOc/gP7FC9RITAcvqB3ksRC5GUlCI1KVq2W9HKJtUuSl0Fws4t3lChjgCvKnrNgLMaYXpM250rQwflBTz6z3lGWY/+NTrfLyU4sKJWUwR5OA9aChr6mtFQUF50YatKDSThngvb8HHZTZNHqfC3oqUiwBQ9k9mi18sziJnEqM8jPPn0OZCXspehUxJrMxuv/ugP43Y85RYqn+OkOnQ5snO70woadCUG7kZ/oDs0Up1hQaiKVWz9ck2Y0SIb6a1rQ1/enCfKrjDKzLGjfm/hBS/zMOgdnQNCRBvgh/byzSGILaiQJ0KynxKh0lnYLEvQJfvNj9/qfppfMOA1ytYGJkpPdBDLnZUosxVol0bah8Htx/ewUz8/pUazD1sokJ6yoqE1dgr6+P+2qeMz5xek5BJ2muaGoxeuxatNoyd5ionPwZi8Fx2NA+RncDEJYhG0EM6pmLcsIuoP749+nw99fv/0t9L7m7vand3AbeJ0DT/PVyfBB8Uc00/WDVzxiZ0BQzM9KDJXHAMJE7f7HvhVE6ZFkmzb2hj3fvTnuKj9Yx9MetNMutN3tnwDe4A3nr9/DW6vUroygzAyEZnpQGarXcQ4EPZYZTFlPiHlPHfkxAMmzFaqRXI2UVvR64RT/eAx9jjx9hM/2jPz14WBMd2Sz5IG8n6VfkOA1KLGgQSIatzAf+qBWci4EnazVaNRyn1UIGqAJuVhel9MofRXfLufpaBd3KELfnQh6H2R7/vRTgP+ZwdBZPiiVRWxn+BjEUse5EJRazMGQMowyiOd8UIjqyJGb43SA8DddS4DX9/vY/PjP4cs/f/jLH+BE0GhN6fUxZ46vRtBxqhtmeiywyP/p8fq1xaXewIKePuC4hTIUbFRhLejwV/zJjpypCEmVbiHeV83onIOtfL47UO/12/6BIE/Q7uUhY52pFkHHtfpk4KDVQq69PJwaamjP+ra3by5+ND/yE425xC/hS0RwqSNZl1N0TwNPhL0414Ie3c8THR/h5s9//eHnnUTQwc6aUIGgw+BMBiPoh9gm2LQ54PnuvkkLOpGSWNDh8uijSuWlfg8/p153JgZW9AoMFpT/mtM5jzffPRzi9Zfjv4fHRoSgg+UcIn4TZhF0vC/RN3oiHJBcORZ0j93N39sjqGAap55AfWCIxGULmnIQ6IKJcF/oYkDTQK0+xBN8eoyIXh5u/rYP4t/FU/zj4UlS93/uSOCkYg5BAyMypEWRAmdBM6Z/47Lu6haUS0ITafTNKE02Z8wNjoQzGXV9p2vTXoo4b07n7E1m/6Ro2JT2lhB0eBb/dq0oHrlaaJqLZ6bAzUE+m6pNiSorloyYhKZ33D5DlGQaA/I4ieQuCduHrxCuuBYTdE/G09T9+v0dwCdf/uMwk4c+6HE30yf/kSO0hg9KpzLS4nHE0tN8S8cvpkoFjg0ycNTRS8u35Y76LskkXhaz8BnYk3KCLoL5BKW3dj9AjAVNrzufnwVFzzuPX0sefJaNQTLapOG5VkUVC7oIaljQ/t/+Sbx0M+ZOdiVKrFvyWDrwNAG9WmDfksCOgeo2Yvky3xifQBXJ8PkiCNqXHWzJZCyDaRA4+ambe9vjF02FQzt1ekB5bK990ww3Bgr7SE8nZne7QeeqvByCDgQcZjrsiokL9/pz4M2PX7SVpm0LZvtsDUILKogIiJSqJIehkbwLImjYExA0lsYNYo3k+9bHL1oFcI9nMmQrY1CgXFREY3kq/aIIGjdNMJtGCU0cv5glA5m/ozs+eOWJ+ixjQO9xUWt2nR5/QdNawjvQqlkNNQmKxUhP3aJHH2p/bH78Yqakcd448ROmP1EmQQPR6bStrgqkQxnwfoG0AblEgobPUYbEoVeAXSGdr0ELBB35eWr7eKYo5ZamAW/T6O3Or9ab/E3mNOWwzMUTlOlHdMp7ngUtqXS9kpKEyAHlY0SIPkjaxBVg5x54spqhjcElEVT2Z2A48zZ5g58lQeNbzhSn8M/VLNoEj1UrnJhxHRZUI9/4zk6KoWdJ0DQ/+QJ2CypWGPpR6eKWJadLJajeeM5YMCnnSVCjOESrkKGGMZACK6Cp86eoiyVoWfHxCdRMDZohqFQHfjIJofPIj4HiqnfTElbEULZ8pq7zhdTDAkGSXBXX9mC314USFKbjm9C+Lp2g+qLS8GK+7H/m71mhGkRfNsF6BMXeGYwdiAL84Vvbxy8W1TC2EPAjNn2K1/jZDRIViykzNCMOuCaCBvwMjiiuoUHLBMVcS72ZbAizpTpihlpzBrmvkqCT4zV8563kBREU+DE3EzRbLVC+aTmHtEHhKyJouF7HViX7+Nl1rV9SkxVMEuJMHHveaJJJVqTkyPJAB2HM4+mLJujodMprg9SSnjlByRPN4IEPVxmzA9NmQSEQz+cwgzwxuB6ChvwU5pUwfj9zgtLeZPa7AvMtPQZRarAXaW4LQqt9RQTFcpP8TE1ahjrWLpkQC13saRN+Ggmq74BS15qycG0WVKmqTxle37kUC0rl6q4gan5CG4bnyG0QCVq0Fnq1BOU2R6DF60uzoLFw8QbNHoNo06KleiuulqDE1SFX+A3Ozb80l1UPuQ3HB0H8GGgRUOJIsVSSpGCc/6oIOtaBqAjBkY1UgzN4aS6jGsD/9LGjTFB9d5hwLb3TT7O2jJt1dQSNgqJwtiIanMdLc8YqiDeDzl/JtqByzMT8Kg0hXNIfuG6Cone2utGIiINyNi/NpWqY7sBhIxP2aYQxyIgb+WcCXEJ0mZGlX18ZSxM0djdJjYMnxgZJ5/XSXLqKflJXghycCh3DuGQN0hW+GBO5mUuvgoUJatjCgA8p3oJmq47BZEEFDQILOq9LTPokki6eoCaZyDs7m9PtalYnjcE27LgygtpxFRY0qUFb2jSmTlvarFZyezSrTWPqbK0KRIskayzUOxylWGWh3uEoxSoL9Q5HKVZZqHc4irHGQr3DsQKcoI6m4QR1NA0nqKNpOEEdTcMJ6mgaTlBH0/Bn8dXgnaOgnGYblKyFhjfstKVOW9q0X7IWGh6DttRpS5vFS8622oYq4gTmFSFpR72s2UI6x6/dAFYElqxbwhUTdHZJg+j4BSySRLdpo3eS5HtHOr1yJoSzmQZFopekVuGLE3QtCwrTq1coLcpFL/Jyc9+lsyFtQaHD/FyDME7QtVoNmI3DwGsEVUSRWVfJl8yhJw36wVDr6nxxgq7WajJPjr+rYBkD4L8yJ5CSfInjy5ir8RSPfkgg9k+WhhN08VZHYdHwAx0554MKpg7IdQgvS0XHPBDkjDUYbirm+BeUtpqXtGA9NlwiQcOIZjBH06FUwhhEtI6TGDYCRJc1fuKwRz2bCbC88fAJUnIROEGXavU4IYbWB5kj7fAwxtsLzq8Mo5XxE7oXJFscf0tZUFQ5oBOlABVhbqBKcIIu1GocUoT8jHIkLSghQHSgVYqVkSQ9C/Nl4ifiJcm2jCF1gi5uQcXKoAuJJ2sD0dfScUvnlSzo6Y+2AOsWdF7J57ub7x7glr6At2qr2Z8tS44Bb7HE7PPAEzSqadEncKwGl07Q128+vnz+oXv5I3nJfs1WQ+gkMl4fp418pmLZrKqXUX3Q6cKyz4h5dS6boC9ffDy8YB+9ZD+v1SaLx0cxS1tQyfqxxzALlSky8uf6op6+HoL2FjQ6pmRWq4UFSpkRShSdp40h2IHok1CUW7Fis/KRmSoumZzA9RC0e4IFfFAh5g2vSVWkH3WKIrLC8azIXSGoeKdRrU2hng1XRNDqJWNJZNSGo6PFKlIWVHE2xWk0MfUmXUfTLUeKAKN2pX69OoJOPmiV/aCUksGX07Ins9oZFuXHIGSTZrCIBsrtAIbghqtJEwtMxARDX8yn1NURtGLJjjGa4RfAf6LZWw2SAERWFPh/k/BSCyqFVv3J2EJl8znlBK1oQY8Jkv+VaUH5RzZcpZEfW4K0c8nof6qZuyvFQjMUu3iCCqfh1m01me2GKZI3l0ySNbLB+WD0d4sh7ZOPrD7+MHjQsV9TEddDUOk03MqtBsxEsisEpwgaGLXBhBom2VmBSdqC4lqHmyLMgxyaer16PQSVTsOt2Wo0YoDGK1qdl3emp7Uh8yre9lzFeKUtaETC0JRWcj4ZDS6boNJpuHVajUlJtgEDmQSjSrPGACgTyW7TPLWnMqYpfiwQGNzQlKLwvUbXXg9BpdNw57Uaz3mjdaNuKNkQKshIaBM4sRIpy/gJmHVJggYMhdi/VttaoF9Cm1WxKEGrl+wCrwwlAkRDpVVnGgN+GWA0VuVA2+J195jWG30ZbCdEVJ2lXkKbVXF2BBVGEL9InicjbUFRQuWI2WhB1TX7rp4zHGvgBK0FxqwqdapjoKgHiyjPEVTW1yKkmjpO0IoyMh73aGNQunpUPq6MaqntUNUiooQ6TtBiEcEQDZ6Ydbrmx2AyXpIk1bgC+1mH6INSfZnv7J3kQdKmJYmMKQxOM1TUgA2BJX7q03+iuCSwwAcdiK1thC2FE7RSq4NoFtmiTIctxUquvjIwVly0oFpJnEb/dQs6p+TM7XYoZO2wsYDBeJL0lCT02TC2mfM2LwAzCdj8WcZ3XFwjEhk59k6/YoLOKwn9yQWA6dj1A48OsiuwoCPFef34wEXRU75wrG3YVs3VZ+4c6KZjGgN+srdpxty/NEEfLb9jWEGD9Qk6bs+AcDTG5Uk835k1oBY0XupEhs+kespRZTYbmwoz4jAZ0Vowo2kzFnRn+qHNChqsXXK0P8cvMCUSmUVTfFANb0HVWTSTVvMJSspMhnm8kYuxLEGfbL8EW0GDlUsGEfv4Jdq7axPPjAHvEYb1Y7+PeJGU1aoSWt5sNwI7Df1n4kJkYlGCPt/95t1FEhR5iJPTSHaJlIUxVgczrhJXTTaQZEWCcywoTEpNLu6gbhmKCLqD++Pfp8PfX7/97V6h3/14SL/96R3c/jhke31/+7/fXyRB6TRLzVmeYM2CKpIC70IWCYkX5VT3MK9zBtM98nPsppUt6PPdm+O29EMEdNrEdprKd7d/Angz7ljfX369UIJ23XBC8hQqVdGA+2xekeev68oxQViGdFmZ8e4tfVjLaGCX8giHzb9Hnj7CZ3tG/vpwMKZhSLTbZ7pAgk4B0XhSsvTUpyDEID5CfIAoKZl6oBo99o+yz7Og9EBS7IxOFtS+5BZXkKPNiCd4250YOGB3Iug9ydMaQV+/jtTJNhK9zz9O7Xj7J1lhssYY0md2csaUkOwf9j6I8oxOAXuyCBr4wIAq4BbbihzRMoLuvcuPp38OX/75w1/+ACeCTow9uQENEfTl4eSL0LNvSiwoXmLCi0wQrlLPs6DHr/H0qD6kB0wFxpEV+AnoyhwLij3P0TsfVCkLlMoIerSVz3cHM/r6bf/E8J6a1AHRaUg2bfJgKPl8d1/RgvLWixtkg0hNG91JFGQhD9BgvsotKCcpFIQCpqKnyoUEPdjHEx0f4ebPf/3h5137BN3rdPP32QSVZs/+2gJjUNwpxKQVaDNjQEIZx/8X7XsoJOg+Qv/u4TCHvxz/3U/llKAnNDTFH8CpUzhw/PMXjqF8BcBnUOnBzOgpMKZefABl0MAAIDXAkFa2CldK0Cf49BgRvTzc/G0fxL+LpvgTGiPojJKB0YzCF+TBxaziarAE/rRk9F0P4qdCdN0+qFu9C/K7FYha4+xOvJ+5EWQKe5N5ot7jMJO/PQ+CFp9uF7j83HlukiIFFlRwZYH84RnKuKzbWtDh8dJUOe8gSeLKtNn1K/Kv398BfPLlPw5B+zkQdE7JkZh1X6eMxkB3FEJjxBBsnmoL+KDYA51c+Hx1KvZ5IRon6Imh3WgOZtXLawBRShcZpUSdM1WqQdDIFenCXU1ZRmG2NhWxKM3qnG6HrcF8cxVpIPqrUj0tWlAmKhuckWyB10PQiqfbIQe0BkOTY6BUYXh2mSVvCQuK3M787roegs453Y7OTSQGmAl5DAyii8IYhkCGL3NBovvMrq+tTRHWsKAZp9sNdKSLSECe8M2EMAaxveHn/+FDWeDRqWF93VBwcozQpJ+o5XoImn+6Hd33MGQWNnEUgx8Djp9ccD/eRaYff0m7EJUJOkWT6DE9TFN+x7eL1eDCCZpfElvQsKOq/g6gaEG1jFGafDh+nkNSl6CAGDqImwJ6t6AzSw7daJlryzEnSDJIjx482rWp7L9MafYdME5QZYof1ncW7pjEGMz2J4TSAm2XC5I4waFzr2RcVBszmiIoDOcvVJ7RVQ0oPU4PsjPsnuoGhInAfFyJoDD+DlR4zAOXc3lt7GiKoKgPq8ZEqgaRq2uLyJTNKuLwb2tBh1c/U+v3TtBEkNTvdCgWn6lBbEFpYkKG2YJatFmQEmOklKjCCcp5fUEySNlqIWsMMsbTXvv6FpRG8KIJuGKCitvtxiU7GL6pXtJssGMgRjaqHiWPEqP9ooJqdRGugcpuzBUTVC7ZM3LYx2idZmtoMEW3wm2RiCbOzIKiDbZCXU5Q1mkbwvfhGJdFIVrQnM0VWk49DFG0WTBIGv6OW52EtRInKGdBTwtMoN7a9SCPQc4WNY2fItOB/KVylmo63TVyNAPsNO8EFSwodkMXRmIMzI+q1Uycqz2KFrdDL25B+28iP52gwgSrWJ3q0CxonEYylKg4hSdbWVCqEAQnCEkdcvUEHazmdELIKlBClMiwUZXSKnKmUwv7tiDoqdeHe0ZcVLh6gnbjc6NVuyJlQU+fAP3JEs5O7nLaJgQd3dBo4nKCkpKyN7QYTGMgWNC0bM1aRvlo1hX7YYhJ6Xhso42ARQlqeGkutSi3DMxjUHLRani3tqB9fUCXm66HoMmX5rDpbM+CdslwXgjENbGpsHkDStAJ7HoImnpprl/qKNagHDUt6BBtyKVJUKhXskl3BEHA9RA08dJcsM6xLqqNgfZEhg2zuJq3JigJU6+HoPpLc6uH7pEG5LMUzqty1GcLuvfCLkJuY0GD0bgigiolt6SnZMfo8pdchiYKJDdqsTlBTxVzm3SugqDc6Xbb8rPEgupbQyCdyabNhpQYHK6rIyhbckt6lo2BHu1nCpMlb98vTtC2Wt2WNo2p05Y21UtKC/Xbo1ltGlNna1VgxkxrX2aiC/VaaVFqboHsChqCd04NlC/Ua6V9DDrvnDooX6jXSvsYdN45dVC+UK+V9jHovHPqYF5jfAwUeOfUgBN0MXjn1IATdDF459TARTXGcXlwgjqahhPU0TScoI6m4QR1NA0nqKNpOEEdTcMJ6mgahQR9gv4n7scPYfrre4C3bIGu291z6buwgJQ+7qoiFbcE75yKKCPoy+cfTrubxg8kffd22AVFLhz2ntwz6c+//wUXkNK7l4fbj0Rga/DOqYkygh565usP+ANJPwAbg+nC69f/xqUHlkOu4PWbn05GgqS3BO+cmigj6NN+Ynn8Cn8g6R3Z4Txd2N3j7h7TH//9Ds9WU/7nu3CjXy+WVNwSvHNqYjGC7qcZrsD+5ubH4M0vrKCnN+EsdgZj4J1TE0tN8c//8oEtsDtsfr6P0w/9uWPSD2lPOBB4aX4W886piYWCJOqj43zYSIzp5Kaf0g/GA7tgwytS7cYB3jk1MWeZ6dAd3ErKPv0xtAWoALeSckjfCfkfmZUUpuKW4J1TEb5Q72gaTlBH03CCOpqGE9TRNJygjqbhBHU0DSeoo2k4QR1NwwnqaBpOUEfTcII6moYT1NE0nKCOpuEEdTQNJ6ijaThBHU3DCepoGk5QR9NwgjqahhPU0TScoI6m4QR1NA0nqKNpOEEdTcMJ6mgaTlBH03CCOpqGE9TRNJygjqbhBHU0DSeoo2k4QR1NwwnqaBpOUEfT+G+hHl+/LzoFOQAAAABJRU5ErkJggg==" /><!-- --></p>
+<p>We can clearly see that the second marginal is independent form the rest. In the following we will use this package to fit this dependence structure.</p>
+</div>
+<div id="fitting-the-cort-copula" class="section level1">
+<h1>Fitting the Cort copula</h1>
+<p>Now that we have a dataset, we can run the Cort algorithm on it. In the implementation proposed here, this is done via the <code>cort::Cort()</code> function, passing first the dataset, and then various parameters. See <code>?Cort</code> for a detailed list of parameters. Note that the verbosity level is quite progressive: We will here put it on 4 to see the splitting decisions that the algorithm is making.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">(<span class="dt">model =</span> <span class="kw">Cort</span>(data,<span class="dt">verbose_lvl=</span><span class="dv">4</span>,<span class="dt">p_value_for_dim_red =</span> <span class="fl">0.75</span>))</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="co">#&gt; Splitting...</span></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="co">#&gt;      1 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="co">#&gt;         Leaf with 200 points.</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="co">#&gt;                     min   max   bp            p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-7" title="7"><span class="co">#&gt;                 1   0     1     0.793066313   0.00000000   Splitted         </span></a>
+<a class="sourceLine" id="cb3-8" title="8"><span class="co">#&gt;                 2   0     1     0.073362799   0.74574575   Splitted         </span></a>
+<a class="sourceLine" id="cb3-9" title="9"><span class="co">#&gt;                 3   0     1     0.208957488   0.00000000   Splitted         </span></a>
+<a class="sourceLine" id="cb3-10" title="10"><span class="co">#&gt;                 4   0     1     0.789018711   0.00000000   Splitted         </span></a>
+<a class="sourceLine" id="cb3-11" title="11"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-12" title="12"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-13" title="13"><span class="co">#&gt;      10 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-14" title="14"><span class="co">#&gt;         Leaf with 10 points.</span></a>
+<a class="sourceLine" id="cb3-15" title="15"><span class="co">#&gt;                     min          max           bp            p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-16" title="16"><span class="co">#&gt;                 1   0.00000000   0.793066313   0.029266960   0.23323323   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-17" title="17"><span class="co">#&gt;                 2   0.00000000   0.073362799   0.024694101   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-18" title="18"><span class="co">#&gt;                 3   0.20895749   1.000000000   0.976639186   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-19" title="19"><span class="co">#&gt;                 4   0.00000000   0.789018711   0.024931546   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-20" title="20"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-21" title="21"><span class="co">#&gt;         Leaf with 5 points.</span></a>
+<a class="sourceLine" id="cb3-22" title="22"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-23" title="23"><span class="co">#&gt;                 1   0.000000000   0.79306631   0.74647612   0.025025025   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-24" title="24"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.46782571   0.815815816   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-25" title="25"><span class="co">#&gt;                 3   0.000000000   0.20895749   0.11341065   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-26" title="26"><span class="co">#&gt;                 4   0.000000000   0.78901871   0.73903510   0.001001001   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-27" title="27"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-28" title="28"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-29" title="29"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-30" title="30"><span class="co">#&gt;                 1   0.000000000   0.79306631   0.74622987   0.059059059   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-31" title="31"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.74698467   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-32" title="32"><span class="co">#&gt;                 3   0.000000000   0.20895749   0.11288653   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-33" title="33"><span class="co">#&gt;                 4   0.789018711   1.00000000   0.95782035   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-34" title="34"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-35" title="35"><span class="co">#&gt;         Leaf with 132 points.</span></a>
+<a class="sourceLine" id="cb3-36" title="36"><span class="co">#&gt;                     min           max          bp            p_value      action     reason           </span></a>
+<a class="sourceLine" id="cb3-37" title="37"><span class="co">#&gt;                 1   0.000000000   0.79306631   0.042821551   0.00000000   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-38" title="38"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.537607355   0.93793794   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-39" title="39"><span class="co">#&gt;                 3   0.208957488   1.00000000   0.956730821   0.00000000   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-40" title="40"><span class="co">#&gt;                 4   0.000000000   0.78901871   0.042245292   0.00000000   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-41" title="41"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-42" title="42"><span class="co">#&gt;         Leaf with 10 points.</span></a>
+<a class="sourceLine" id="cb3-43" title="43"><span class="co">#&gt;                     min           max          bp           p_value       action     reason</span></a>
+<a class="sourceLine" id="cb3-44" title="44"><span class="co">#&gt;                 1   0.000000000   0.79306631   0.72963801   0.001001001   Splitted         </span></a>
+<a class="sourceLine" id="cb3-45" title="45"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.79100657   0.699699700   Splitted         </span></a>
+<a class="sourceLine" id="cb3-46" title="46"><span class="co">#&gt;                 3   0.208957488   1.00000000   0.29191967   0.000000000   Splitted         </span></a>
+<a class="sourceLine" id="cb3-47" title="47"><span class="co">#&gt;                 4   0.789018711   1.00000000   0.81149607   0.708708709   Splitted         </span></a>
+<a class="sourceLine" id="cb3-48" title="48"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-49" title="49"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-50" title="50"><span class="co">#&gt;                     min          max           bp            p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-51" title="51"><span class="co">#&gt;                 1   0.79306631   1.000000000   0.831543045   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-52" title="52"><span class="co">#&gt;                 2   0.00000000   0.073362799   0.054725149   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-53" title="53"><span class="co">#&gt;                 3   0.00000000   0.208957488   0.077939286   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-54" title="54"><span class="co">#&gt;                 4   0.00000000   0.789018711   0.779741296   0.038038038   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-55" title="55"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-56" title="56"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-57" title="57"><span class="co">#&gt;                     min          max           bp            p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-58" title="58"><span class="co">#&gt;                 1   0.79306631   1.000000000   0.845773688   1         Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-59" title="59"><span class="co">#&gt;                 2   0.00000000   0.073362799   0.064447416   1         Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-60" title="60"><span class="co">#&gt;                 3   0.00000000   0.208957488   0.025492203   1         Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-61" title="61"><span class="co">#&gt;                 4   0.78901871   1.000000000   0.979599081   1         Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-62" title="62"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-63" title="63"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-64" title="64"><span class="co">#&gt;                     min           max          bp           p_value       action     reason           </span></a>
+<a class="sourceLine" id="cb3-65" title="65"><span class="co">#&gt;                 1   0.793066313   1.00000000   0.84166992   1.000000000   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-66" title="66"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.32339274   0.342342342   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-67" title="67"><span class="co">#&gt;                 3   0.000000000   0.20895749   0.15757214   0.326326326   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-68" title="68"><span class="co">#&gt;                 4   0.000000000   0.78901871   0.74348553   0.001001001   Removed    Close to boundary</span></a>
+<a class="sourceLine" id="cb3-69" title="69"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-70" title="70"><span class="co">#&gt;         Leaf with 27 points.</span></a>
+<a class="sourceLine" id="cb3-71" title="71"><span class="co">#&gt;                     min           max          bp            p_value       action     reason           </span></a>
+<a class="sourceLine" id="cb3-72" title="72"><span class="co">#&gt;                 1   0.793066313   1.00000000   0.910329535   0.897897898   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-73" title="73"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.338809561   0.349349349   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-74" title="74"><span class="co">#&gt;                 3   0.000000000   0.20895749   0.062301862   0.074074074   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-75" title="75"><span class="co">#&gt;                 4   0.789018711   1.00000000   0.945263364   0.055055055   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-76" title="76"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-77" title="77"><span class="co">#&gt;         Leaf with 5 points.</span></a>
+<a class="sourceLine" id="cb3-78" title="78"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-79" title="79"><span class="co">#&gt;                 1   0.793066313   1.00000000   0.91944990   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-80" title="80"><span class="co">#&gt;                 2   0.073362799   1.00000000   0.29163589   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-81" title="81"><span class="co">#&gt;                 3   0.208957488   1.00000000   0.23173294   0.051051051   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-82" title="82"><span class="co">#&gt;                 4   0.000000000   0.78901871   0.76680943   0.007007007   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-83" title="83"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-84" title="84"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-85" title="85"><span class="co">#&gt;      10 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-86" title="86"><span class="co">#&gt;         Leaf with 6 points.</span></a>
+<a class="sourceLine" id="cb3-87" title="87"><span class="co">#&gt;                     min           max           bp             p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-88" title="88"><span class="co">#&gt;                 1   0.000000000   0.042821551   0.0065360942     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-89" title="89"><span class="co">#&gt;                 2   0.073362799   1.000000000            NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-90" title="90"><span class="co">#&gt;                 3   0.956730821   1.000000000   0.9931915688     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-91" title="91"><span class="co">#&gt;                 4   0.000000000   0.042245292   0.0062637572     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-92" title="92"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-93" title="93"><span class="co">#&gt;         Leaf with 124 points.</span></a>
+<a class="sourceLine" id="cb3-94" title="94"><span class="co">#&gt;                     min           max          bp            p_value   action     reason</span></a>
+<a class="sourceLine" id="cb3-95" title="95"><span class="co">#&gt;                 1   0.042821551   0.79306631   0.065828676     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-96" title="96"><span class="co">#&gt;                 2   0.073362799   1.00000000           NaN   NaN                        </span></a>
+<a class="sourceLine" id="cb3-97" title="97"><span class="co">#&gt;                 3   0.208957488   0.95673082   0.935908260     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-98" title="98"><span class="co">#&gt;                 4   0.042245292   0.78901871   0.062581190     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-99" title="99"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-100" title="100"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-101" title="101"><span class="co">#&gt;                     min           max          bp           p_value      action     reason           </span></a>
+<a class="sourceLine" id="cb3-102" title="102"><span class="co">#&gt;                 1   0.000000000   0.72963801   0.56858981   0.17917918   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-103" title="103"><span class="co">#&gt;                 2   0.073362799   0.79100657   0.27064799   0.30030030   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-104" title="104"><span class="co">#&gt;                 3   0.291919675   1.00000000   0.43283826   0.42042042   Removed    Close to boundary</span></a>
+<a class="sourceLine" id="cb3-105" title="105"><span class="co">#&gt;                 4   0.811496071   1.00000000   0.82108441   1.00000000   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-106" title="106"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-107" title="107"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-108" title="108"><span class="co">#&gt;                     min          max          bp           p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-109" title="109"><span class="co">#&gt;                 1   0.79306631   1.00000000          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-110" title="110"><span class="co">#&gt;                 2   0.32339274   1.00000000   0.63368566     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-111" title="111"><span class="co">#&gt;                 3   0.00000000   0.15757214   0.14924937     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-112" title="112"><span class="co">#&gt;                 4   0.00000000   0.78901871          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-113" title="113"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-114" title="114"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-115" title="115"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-116" title="116"><span class="co">#&gt;                 1   0.793066313   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-117" title="117"><span class="co">#&gt;                 2   0.073362799   0.33880956   0.29480487   0.56456456   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-118" title="118"><span class="co">#&gt;                 3   0.062301862   0.20895749   0.10448923   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-119" title="119"><span class="co">#&gt;                 4   0.789018711   0.94526336   0.88403653   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-120" title="120"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-121" title="121"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-122" title="122"><span class="co">#&gt;                     min           max          bp           p_value      action     reason           </span></a>
+<a class="sourceLine" id="cb3-123" title="123"><span class="co">#&gt;                 1   0.793066313   1.00000000          NaN          NaN                               </span></a>
+<a class="sourceLine" id="cb3-124" title="124"><span class="co">#&gt;                 2   0.073362799   0.33880956   0.29234682   0.42442442   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-125" title="125"><span class="co">#&gt;                 3   0.062301862   0.20895749   0.12394396   0.09009009   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-126" title="126"><span class="co">#&gt;                 4   0.945263364   1.00000000   0.96517297   1.00000000   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-127" title="127"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-128" title="128"><span class="co">#&gt;         Leaf with 6 points.</span></a>
+<a class="sourceLine" id="cb3-129" title="129"><span class="co">#&gt;                     min          max           bp            p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-130" title="130"><span class="co">#&gt;                 1   0.79306631   1.000000000           NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-131" title="131"><span class="co">#&gt;                 2   0.33880956   1.000000000   0.832772505   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-132" title="132"><span class="co">#&gt;                 3   0.00000000   0.062301862   0.052701408   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-133" title="133"><span class="co">#&gt;                 4   0.78901871   0.945263364   0.920371108   0.11511512   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-134" title="134"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-135" title="135"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-136" title="136"><span class="co">#&gt;                     min          max           bp             p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-137" title="137"><span class="co">#&gt;                 1   0.79306631   1.000000000            NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-138" title="138"><span class="co">#&gt;                 2   0.33880956   1.000000000   0.8706379426     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-139" title="139"><span class="co">#&gt;                 3   0.00000000   0.062301862   0.0099673589     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-140" title="140"><span class="co">#&gt;                 4   0.94526336   1.000000000   0.9615632425     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-141" title="141"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-142" title="142"><span class="co">#&gt;         Leaf with 9 points.</span></a>
+<a class="sourceLine" id="cb3-143" title="143"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-144" title="144"><span class="co">#&gt;                 1   0.793066313   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-145" title="145"><span class="co">#&gt;                 2   0.338809561   1.00000000   0.33887113   0.33933934   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-146" title="146"><span class="co">#&gt;                 3   0.062301862   0.20895749   0.20894104   0.85785786   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-147" title="147"><span class="co">#&gt;                 4   0.789018711   0.94526336   0.94524514   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-148" title="148"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-149" title="149"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-150" title="150"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-151" title="151"><span class="co">#&gt;                 1   0.793066313   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-152" title="152"><span class="co">#&gt;                 2   0.338809561   1.00000000   0.40298836   0.64264264   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-153" title="153"><span class="co">#&gt;                 3   0.062301862   0.20895749   0.18667424   0.36536537   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-154" title="154"><span class="co">#&gt;                 4   0.945263364   1.00000000   0.95041568   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-155" title="155"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-156" title="156"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-157" title="157"><span class="co">#&gt;      3 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-158" title="158"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-159" title="159"><span class="co">#&gt;                     min           max           bp            p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-160" title="160"><span class="co">#&gt;                 1   0.042821551   0.065828676   0.053067993     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-161" title="161"><span class="co">#&gt;                 2   0.073362799   1.000000000           NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-162" title="162"><span class="co">#&gt;                 3   0.935908260   0.956730821   0.950248756     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-163" title="163"><span class="co">#&gt;                 4   0.042245292   0.062581190   0.054726368     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-164" title="164"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-165" title="165"><span class="co">#&gt;         Leaf with 120 points.</span></a>
+<a class="sourceLine" id="cb3-166" title="166"><span class="co">#&gt;                     min           max          bp           p_value   action     reason</span></a>
+<a class="sourceLine" id="cb3-167" title="167"><span class="co">#&gt;                 1   0.065828676   0.79306631   0.11964882     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-168" title="168"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                        </span></a>
+<a class="sourceLine" id="cb3-169" title="169"><span class="co">#&gt;                 3   0.208957488   0.93590826   0.88115172     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-170" title="170"><span class="co">#&gt;                 4   0.062581190   0.78901871   0.11599548     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-171" title="171"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-172" title="172"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-173" title="173"><span class="co">#&gt;                     min           max          bp            p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-174" title="174"><span class="co">#&gt;                 1   0.793066313   1.00000000           NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-175" title="175"><span class="co">#&gt;                 2   0.292346820   0.33880956   0.296951575   0.11411411   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-176" title="176"><span class="co">#&gt;                 3   0.062301862   0.12394396   0.069654825   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-177" title="177"><span class="co">#&gt;                 4   0.945263364   1.00000000           NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-178" title="178"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-179" title="179"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-180" title="180"><span class="co">#&gt;      3 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-181" title="181"><span class="co">#&gt;         Leaf with 7 points.</span></a>
+<a class="sourceLine" id="cb3-182" title="182"><span class="co">#&gt;                     min           max          bp            p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-183" title="183"><span class="co">#&gt;                 1   0.065828676   0.11964882   0.079603606   0.42242242   Splitted         </span></a>
+<a class="sourceLine" id="cb3-184" title="184"><span class="co">#&gt;                 2   0.073362799   1.00000000           NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-185" title="185"><span class="co">#&gt;                 3   0.881151716   0.93590826   0.924981262   0.43143143   Splitted         </span></a>
+<a class="sourceLine" id="cb3-186" title="186"><span class="co">#&gt;                 4   0.062581190   0.11599548   0.069823682   0.38838839   Splitted         </span></a>
+<a class="sourceLine" id="cb3-187" title="187"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-188" title="188"><span class="co">#&gt;         Leaf with 107 points.</span></a>
+<a class="sourceLine" id="cb3-189" title="189"><span class="co">#&gt;                     min           max          bp           p_value   action     reason</span></a>
+<a class="sourceLine" id="cb3-190" title="190"><span class="co">#&gt;                 1   0.119648815   0.79306631   0.27188506     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-191" title="191"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                        </span></a>
+<a class="sourceLine" id="cb3-192" title="192"><span class="co">#&gt;                 3   0.208957488   0.88115172   0.72636003     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-193" title="193"><span class="co">#&gt;                 4   0.115995484   0.78901871   0.26648409     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-194" title="194"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-195" title="195"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-196" title="196"><span class="co">#&gt;                     min           max          bp            p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-197" title="197"><span class="co">#&gt;                 1   0.065828676   0.11964882   0.101680877   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-198" title="198"><span class="co">#&gt;                 2   0.073362799   1.00000000           NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-199" title="199"><span class="co">#&gt;                 3   0.208957488   0.88115172   0.879194269   0.01001001   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-200" title="200"><span class="co">#&gt;                 4   0.062581190   0.11599548   0.084207853   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-201" title="201"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-202" title="202"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-203" title="203"><span class="co">#&gt;      7 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-204" title="204"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-205" title="205"><span class="co">#&gt;                     min           max           bp            p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-206" title="206"><span class="co">#&gt;                 1   0.065828676   0.079603606   0.078923524     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-207" title="207"><span class="co">#&gt;                 2   0.073362799   1.000000000           NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-208" title="208"><span class="co">#&gt;                 3   0.924981262   0.935908260   0.925377175     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-209" title="209"><span class="co">#&gt;                 4   0.062581190   0.069823682   0.066008939     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-210" title="210"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-211" title="211"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-212" title="212"><span class="co">#&gt;                     min           max          bp            p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-213" title="213"><span class="co">#&gt;                 1   0.079603606   0.11964882   0.097829469     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-214" title="214"><span class="co">#&gt;                 2   0.073362799   1.00000000           NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-215" title="215"><span class="co">#&gt;                 3   0.881151716   0.92498126   0.906854689     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-216" title="216"><span class="co">#&gt;                 4   0.069823682   0.11599548   0.099455676     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-217" title="217"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-218" title="218"><span class="co">#&gt;         Leaf with 21 points.</span></a>
+<a class="sourceLine" id="cb3-219" title="219"><span class="co">#&gt;                     min           max          bp           p_value       action     reason</span></a>
+<a class="sourceLine" id="cb3-220" title="220"><span class="co">#&gt;                 1   0.119648815   0.27188506   0.19685645   0.012012012   Splitted         </span></a>
+<a class="sourceLine" id="cb3-221" title="221"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                    </span></a>
+<a class="sourceLine" id="cb3-222" title="222"><span class="co">#&gt;                 3   0.726360027   0.88115172   0.80101288   0.012012012   Splitted         </span></a>
+<a class="sourceLine" id="cb3-223" title="223"><span class="co">#&gt;                 4   0.115995484   0.26648409   0.19373922   0.018018018   Splitted         </span></a>
+<a class="sourceLine" id="cb3-224" title="224"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-225" title="225"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-226" title="226"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-227" title="227"><span class="co">#&gt;                 1   0.119648815   0.27188506   0.25352940   0.641641642   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-228" title="228"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                              </span></a>
+<a class="sourceLine" id="cb3-229" title="229"><span class="co">#&gt;                 3   0.726360027   0.88115172   0.76618348   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-230" title="230"><span class="co">#&gt;                 4   0.266484092   0.78901871   0.29054102   0.076076076   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-231" title="231"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-232" title="232"><span class="co">#&gt;         Leaf with 78 points.</span></a>
+<a class="sourceLine" id="cb3-233" title="233"><span class="co">#&gt;                     min           max          bp           p_value   action     reason</span></a>
+<a class="sourceLine" id="cb3-234" title="234"><span class="co">#&gt;                 1   0.271885061   0.79306631   0.38434960     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-235" title="235"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                        </span></a>
+<a class="sourceLine" id="cb3-236" title="236"><span class="co">#&gt;                 3   0.208957488   0.72636003   0.61193415     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-237" title="237"><span class="co">#&gt;                 4   0.266484092   0.78901871   0.37693310     0       Splitted         </span></a>
+<a class="sourceLine" id="cb3-238" title="238"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-239" title="239"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-240" title="240"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-241" title="241"><span class="co">#&gt;                 1   0.271885061   0.79306631   0.33562755   0.105105105   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-242" title="242"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                              </span></a>
+<a class="sourceLine" id="cb3-243" title="243"><span class="co">#&gt;                 3   0.726360027   0.88115172   0.73246193   0.596596597   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-244" title="244"><span class="co">#&gt;                 4   0.266484092   0.78901871   0.30366987   0.078078078   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-245" title="245"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-246" title="246"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-247" title="247"><span class="co">#&gt;                     min           max          bp           p_value       action    reason           </span></a>
+<a class="sourceLine" id="cb3-248" title="248"><span class="co">#&gt;                 1   0.119648815   0.27188506   0.19894481   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-249" title="249"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                              </span></a>
+<a class="sourceLine" id="cb3-250" title="250"><span class="co">#&gt;                 3   0.208957488   0.72636003   0.72113597   0.079079079   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-251" title="251"><span class="co">#&gt;                 4   0.115995484   0.26648409   0.17420944   1.000000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-252" title="252"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-253" title="253"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-254" title="254"><span class="co">#&gt;      12 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-255" title="255"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-256" title="256"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-257" title="257"><span class="co">#&gt;                 1   0.119648815   0.19685645   0.18407815   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-258" title="258"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-259" title="259"><span class="co">#&gt;                 3   0.726360027   0.80101288   0.75733968   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-260" title="260"><span class="co">#&gt;                 4   0.193739216   0.26648409   0.21153553   0.34334334   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-261" title="261"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-262" title="262"><span class="co">#&gt;         Leaf with 7 points.</span></a>
+<a class="sourceLine" id="cb3-263" title="263"><span class="co">#&gt;                     min           max          bp           p_value      action     reason           </span></a>
+<a class="sourceLine" id="cb3-264" title="264"><span class="co">#&gt;                 1   0.119648815   0.19685645   0.14108896   0.77077077   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-265" title="265"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                               </span></a>
+<a class="sourceLine" id="cb3-266" title="266"><span class="co">#&gt;                 3   0.801012875   0.88115172   0.85572048   0.29429429   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-267" title="267"><span class="co">#&gt;                 4   0.115995484   0.19373922   0.13455778   0.27827828   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-268" title="268"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-269" title="269"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-270" title="270"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-271" title="271"><span class="co">#&gt;                 1   0.119648815   0.19685645   0.18879593   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-272" title="272"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-273" title="273"><span class="co">#&gt;                 3   0.801012875   0.88115172   0.84545595   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-274" title="274"><span class="co">#&gt;                 4   0.193739216   0.26648409   0.25373082   0.63263263   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-275" title="275"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-276" title="276"><span class="co">#&gt;         Leaf with 8 points.</span></a>
+<a class="sourceLine" id="cb3-277" title="277"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-278" title="278"><span class="co">#&gt;                 1   0.196856447   0.27188506   0.22662820   0.74974975   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-279" title="279"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-280" title="280"><span class="co">#&gt;                 3   0.726360027   0.80101288   0.75125930   0.82582583   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-281" title="281"><span class="co">#&gt;                 4   0.193739216   0.26648409   0.21393072   0.76976977   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-282" title="282"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-283" title="283"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-284" title="284"><span class="co">#&gt;                     min           max          bp           p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-285" title="285"><span class="co">#&gt;                 1   0.196856447   0.27188506   0.22554118     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-286" title="286"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-287" title="287"><span class="co">#&gt;                 3   0.801012875   0.88115172   0.82168855     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-288" title="288"><span class="co">#&gt;                 4   0.115995484   0.19373922   0.16915233     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-289" title="289"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-290" title="290"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-291" title="291"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-292" title="292"><span class="co">#&gt;                 1   0.271885061   0.38434960   0.32303566   0.55655656   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-293" title="293"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-294" title="294"><span class="co">#&gt;                 3   0.208957488   0.61193415   0.56218594   0.16616617   Removed      Close to boundary</span></a>
+<a class="sourceLine" id="cb3-295" title="295"><span class="co">#&gt;                 4   0.376933100   0.78901871   0.42165697   0.18318318   Removed      Close to boundary</span></a>
+<a class="sourceLine" id="cb3-296" title="296"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-297" title="297"><span class="co">#&gt;         Leaf with 10 points.</span></a>
+<a class="sourceLine" id="cb3-298" title="298"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-299" title="299"><span class="co">#&gt;                 1   0.271885061   0.38434960   0.36667239   0.55055055   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-300" title="300"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-301" title="301"><span class="co">#&gt;                 3   0.611934152   0.72636003   0.61195748   0.82582583   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-302" title="302"><span class="co">#&gt;                 4   0.266484092   0.37693310   0.32525261   0.82582583   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-303" title="303"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-304" title="304"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-305" title="305"><span class="co">#&gt;                     min           max          bp           p_value       action     reason           </span></a>
+<a class="sourceLine" id="cb3-306" title="306"><span class="co">#&gt;                 1   0.271885061   0.38434960   0.35570733   0.310310310   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-307" title="307"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                               </span></a>
+<a class="sourceLine" id="cb3-308" title="308"><span class="co">#&gt;                 3   0.611934152   0.72636003   0.65107066   0.312312312   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-309" title="309"><span class="co">#&gt;                 4   0.376933100   0.78901871   0.42288955   0.095095095   Removed    Close to boundary</span></a>
+<a class="sourceLine" id="cb3-310" title="310"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-311" title="311"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-312" title="312"><span class="co">#&gt;                     min           max          bp           p_value       action     reason</span></a>
+<a class="sourceLine" id="cb3-313" title="313"><span class="co">#&gt;                 1   0.384349600   0.79306631   0.43274466   0.036036036   Splitted         </span></a>
+<a class="sourceLine" id="cb3-314" title="314"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                    </span></a>
+<a class="sourceLine" id="cb3-315" title="315"><span class="co">#&gt;                 3   0.208957488   0.61193415   0.43790324   0.633633634   Splitted         </span></a>
+<a class="sourceLine" id="cb3-316" title="316"><span class="co">#&gt;                 4   0.266484092   0.37693310   0.36074103   0.428428428   Splitted         </span></a>
+<a class="sourceLine" id="cb3-317" title="317"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-318" title="318"><span class="co">#&gt;         Leaf with 52 points.</span></a>
+<a class="sourceLine" id="cb3-319" title="319"><span class="co">#&gt;                     min           max          bp           p_value       action     reason</span></a>
+<a class="sourceLine" id="cb3-320" title="320"><span class="co">#&gt;                 1   0.384349600   0.79306631   0.57453765   0.005005005   Splitted         </span></a>
+<a class="sourceLine" id="cb3-321" title="321"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                    </span></a>
+<a class="sourceLine" id="cb3-322" title="322"><span class="co">#&gt;                 3   0.208957488   0.61193415   0.41031179   0.030030030   Splitted         </span></a>
+<a class="sourceLine" id="cb3-323" title="323"><span class="co">#&gt;                 4   0.376933100   0.78901871   0.57220761   0.001001001   Splitted         </span></a>
+<a class="sourceLine" id="cb3-324" title="324"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-325" title="325"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-326" title="326"><span class="co">#&gt;                     min           max          bp           p_value      action     reason           </span></a>
+<a class="sourceLine" id="cb3-327" title="327"><span class="co">#&gt;                 1   0.384349600   0.79306631   0.55222598   1.00000000   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-328" title="328"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                               </span></a>
+<a class="sourceLine" id="cb3-329" title="329"><span class="co">#&gt;                 3   0.611934152   0.72636003   0.66067260   0.40840841   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-330" title="330"><span class="co">#&gt;                 4   0.376933100   0.78901871   0.45888203   0.16116116   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-331" title="331"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-332" title="332"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-333" title="333"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-334" title="334"><span class="co">#&gt;                 1   0.271885061   0.38434960   0.35256476   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-335" title="335"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-336" title="336"><span class="co">#&gt;                 3   0.208957488   0.61193415   0.53233104   0.22722723   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-337" title="337"><span class="co">#&gt;                 4   0.266484092   0.37693310   0.28582048   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-338" title="338"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-339" title="339"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-340" title="340"><span class="co">#&gt;      12 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-341" title="341"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-342" title="342"><span class="co">#&gt;                     min           max          bp           p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-343" title="343"><span class="co">#&gt;                 1   0.119648815   0.19685645          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-344" title="344"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-345" title="345"><span class="co">#&gt;                 3   0.801012875   0.85572048   0.82124427   0.46346346   Splitted         </span></a>
+<a class="sourceLine" id="cb3-346" title="346"><span class="co">#&gt;                 4   0.134557776   0.19373922   0.16419882   0.40940941   Splitted         </span></a>
+<a class="sourceLine" id="cb3-347" title="347"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-348" title="348"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-349" title="349"><span class="co">#&gt;                     min           max          bp           p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-350" title="350"><span class="co">#&gt;                 1   0.119648815   0.19685645          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-351" title="351"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-352" title="352"><span class="co">#&gt;                 3   0.855720475   0.88115172   0.85660434     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-353" title="353"><span class="co">#&gt;                 4   0.115995484   0.13455778   0.12935286     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-354" title="354"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-355" title="355"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-356" title="356"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-357" title="357"><span class="co">#&gt;                 1   0.384349600   0.43274466   0.38452287   0.38238238   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-358" title="358"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-359" title="359"><span class="co">#&gt;                 3   0.208957488   0.43790324   0.43777821   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-360" title="360"><span class="co">#&gt;                 4   0.360741033   0.37693310   0.37690501   0.37537538   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-361" title="361"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-362" title="362"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-363" title="363"><span class="co">#&gt;                     min           max          bp           p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-364" title="364"><span class="co">#&gt;                 1   0.384349600   0.57453765   0.53247665   0.58858859   Splitted         </span></a>
+<a class="sourceLine" id="cb3-365" title="365"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-366" title="366"><span class="co">#&gt;                 3   0.208957488   0.41031179   0.36827940   0.53753754   Splitted         </span></a>
+<a class="sourceLine" id="cb3-367" title="367"><span class="co">#&gt;                 4   0.572207608   0.78901871   0.62189266   0.52252252   Splitted         </span></a>
+<a class="sourceLine" id="cb3-368" title="368"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-369" title="369"><span class="co">#&gt;         Leaf with 12 points.</span></a>
+<a class="sourceLine" id="cb3-370" title="370"><span class="co">#&gt;                     min           max          bp           p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-371" title="371"><span class="co">#&gt;                 1   0.384349600   0.57453765   0.45392145   0.52152152   Splitted         </span></a>
+<a class="sourceLine" id="cb3-372" title="372"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-373" title="373"><span class="co">#&gt;                 3   0.410311786   0.61193415   0.54725983   0.17317317   Splitted         </span></a>
+<a class="sourceLine" id="cb3-374" title="374"><span class="co">#&gt;                 4   0.376933100   0.57220761   0.50213797   0.21421421   Splitted         </span></a>
+<a class="sourceLine" id="cb3-375" title="375"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-376" title="376"><span class="co">#&gt;         Leaf with 5 points.</span></a>
+<a class="sourceLine" id="cb3-377" title="377"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-378" title="378"><span class="co">#&gt;                 1   0.384349600   0.57453765   0.41791128   0.63563564   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-379" title="379"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-380" title="380"><span class="co">#&gt;                 3   0.410311786   0.61193415   0.52717035   0.79779780   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-381" title="381"><span class="co">#&gt;                 4   0.572207608   0.78901871   0.58706794   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-382" title="382"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-383" title="383"><span class="co">#&gt;         Leaf with 5 points.</span></a>
+<a class="sourceLine" id="cb3-384" title="384"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-385" title="385"><span class="co">#&gt;                 1   0.574537650   0.79306631   0.78561324   0.45745746   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-386" title="386"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-387" title="387"><span class="co">#&gt;                 3   0.208957488   0.41031179   0.40633893   0.58458458   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-388" title="388"><span class="co">#&gt;                 4   0.376933100   0.57220761   0.38812318   0.58658659   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-389" title="389"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-390" title="390"><span class="co">#&gt;         Leaf with 14 points.</span></a>
+<a class="sourceLine" id="cb3-391" title="391"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-392" title="392"><span class="co">#&gt;                 1   0.574537650   0.79306631   0.66905645   0.62262262   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-393" title="393"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-394" title="394"><span class="co">#&gt;                 3   0.208957488   0.41031179   0.32337244   0.95495495   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-395" title="395"><span class="co">#&gt;                 4   0.572207608   0.78901871   0.67361034   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-396" title="396"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-397" title="397"><span class="co">#&gt;         Leaf with 5 points.</span></a>
+<a class="sourceLine" id="cb3-398" title="398"><span class="co">#&gt;                     min           max          bp           p_value     action       reason           </span></a>
+<a class="sourceLine" id="cb3-399" title="399"><span class="co">#&gt;                 1   0.574537650   0.79306631   0.59204309   1.0000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-400" title="400"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN         NaN                                 </span></a>
+<a class="sourceLine" id="cb3-401" title="401"><span class="co">#&gt;                 3   0.410311786   0.61193415   0.52113685   0.4974975   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-402" title="402"><span class="co">#&gt;                 4   0.376933100   0.57220761   0.55508101   0.7977978   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-403" title="403"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-404" title="404"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-405" title="405"><span class="co">#&gt;                     min           max          bp           p_value     action    reason           </span></a>
+<a class="sourceLine" id="cb3-406" title="406"><span class="co">#&gt;                 1   0.574537650   0.79306631   0.73371970   1.0000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-407" title="407"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN         NaN                              </span></a>
+<a class="sourceLine" id="cb3-408" title="408"><span class="co">#&gt;                 3   0.410311786   0.61193415   0.44958932   0.2042042   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-409" title="409"><span class="co">#&gt;                 4   0.572207608   0.78901871   0.63185248   1.0000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-410" title="410"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-411" title="411"><span class="co">#&gt;         Leaf with 6 points.</span></a>
+<a class="sourceLine" id="cb3-412" title="412"><span class="co">#&gt;                     min           max          bp           p_value       action     reason</span></a>
+<a class="sourceLine" id="cb3-413" title="413"><span class="co">#&gt;                 1   0.384349600   0.57453765   0.55283435   0.028028028   Splitted         </span></a>
+<a class="sourceLine" id="cb3-414" title="414"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                    </span></a>
+<a class="sourceLine" id="cb3-415" title="415"><span class="co">#&gt;                 3   0.208957488   0.41031179   0.26190578   0.294294294   Splitted         </span></a>
+<a class="sourceLine" id="cb3-416" title="416"><span class="co">#&gt;                 4   0.376933100   0.57220761   0.54726179   0.049049049   Splitted         </span></a>
+<a class="sourceLine" id="cb3-417" title="417"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-418" title="418"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-419" title="419"><span class="co">#&gt;                     min           max          bp           p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-420" title="420"><span class="co">#&gt;                 1   0.384349600   0.79306631          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-421" title="421"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-422" title="422"><span class="co">#&gt;                 3   0.611934152   0.66067260   0.62269454   0.60160160   Splitted         </span></a>
+<a class="sourceLine" id="cb3-423" title="423"><span class="co">#&gt;                 4   0.376933100   0.45888203   0.39801108   0.65365365   Splitted         </span></a>
+<a class="sourceLine" id="cb3-424" title="424"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-425" title="425"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-426" title="426"><span class="co">#&gt;      6 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-427" title="427"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-428" title="428"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-429" title="429"><span class="co">#&gt;                 1   0.119648815   0.19685645          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-430" title="430"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-431" title="431"><span class="co">#&gt;                 3   0.801012875   0.82124427   0.80180241   0.20420420   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-432" title="432"><span class="co">#&gt;                 4   0.134557776   0.16419882   0.16412616   0.16716717   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-433" title="433"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-434" title="434"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-435" title="435"><span class="co">#&gt;                     min           max          bp           p_value   action    reason           </span></a>
+<a class="sourceLine" id="cb3-436" title="436"><span class="co">#&gt;                 1   0.384349600   0.53247665   0.51740520     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-437" title="437"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN   NaN                                  </span></a>
+<a class="sourceLine" id="cb3-438" title="438"><span class="co">#&gt;                 3   0.208957488   0.36827940   0.30759802     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-439" title="439"><span class="co">#&gt;                 4   0.621892657   0.78901871   0.65174185     1       Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-440" title="440"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-441" title="441"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-442" title="442"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-443" title="443"><span class="co">#&gt;                 1   0.384349600   0.45392145   0.42785285   0.86686687   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-444" title="444"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-445" title="445"><span class="co">#&gt;                 3   0.547259827   0.61193415   0.59646282   0.19019019   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-446" title="446"><span class="co">#&gt;                 4   0.376933100   0.50213797   0.47070495   0.85985986   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-447" title="447"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-448" title="448"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-449" title="449"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-450" title="450"><span class="co">#&gt;                 1   0.384349600   0.45392145   0.39801501   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-451" title="451"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-452" title="452"><span class="co">#&gt;                 3   0.547259827   0.61193415   0.55232574   1.00000000   Removed   Independence test</span></a>
+<a class="sourceLine" id="cb3-453" title="453"><span class="co">#&gt;                 4   0.502137972   0.57220761   0.56711339   0.19219219   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-454" title="454"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-455" title="455"><span class="co">#&gt;         Leaf with 3 points.</span></a>
+<a class="sourceLine" id="cb3-456" title="456"><span class="co">#&gt;                     min           max          bp           p_value      action       reason           </span></a>
+<a class="sourceLine" id="cb3-457" title="457"><span class="co">#&gt;                 1   0.453921453   0.57453765   0.50248891   1.00000000   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-458" title="458"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                                 </span></a>
+<a class="sourceLine" id="cb3-459" title="459"><span class="co">#&gt;                 3   0.410311786   0.54725983   0.46270142   0.44444444   Dissmissed   No one-dim split </span></a>
+<a class="sourceLine" id="cb3-460" title="460"><span class="co">#&gt;                 4   0.502137972   0.57220761   0.53924121   0.84484484   Removed      Independence test</span></a>
+<a class="sourceLine" id="cb3-461" title="461"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-462" title="462"><span class="co">#&gt;         Leaf with 4 points.</span></a>
+<a class="sourceLine" id="cb3-463" title="463"><span class="co">#&gt;                     min           max          bp           p_value       action     reason           </span></a>
+<a class="sourceLine" id="cb3-464" title="464"><span class="co">#&gt;                 1   0.384349600   0.55283435   0.50746186   0.422422422   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-465" title="465"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN           NaN                               </span></a>
+<a class="sourceLine" id="cb3-466" title="466"><span class="co">#&gt;                 3   0.261905783   0.41031179   0.34766423   1.000000000   Removed    Independence test</span></a>
+<a class="sourceLine" id="cb3-467" title="467"><span class="co">#&gt;                 4   0.376933100   0.54726179   0.50579039   0.057057057   Splitted                    </span></a>
+<a class="sourceLine" id="cb3-468" title="468"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-469" title="469"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-470" title="470"><span class="co">#&gt;      2 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-471" title="471"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-472" title="472"><span class="co">#&gt;                     min           max          bp           p_value      action    reason           </span></a>
+<a class="sourceLine" id="cb3-473" title="473"><span class="co">#&gt;                 1   0.507461859   0.55283435   0.50748350   0.74674675   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-474" title="474"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-475" title="475"><span class="co">#&gt;                 3   0.261905783   0.41031179          NaN          NaN                              </span></a>
+<a class="sourceLine" id="cb3-476" title="476"><span class="co">#&gt;                 4   0.505790392   0.54726179   0.54724087   0.72672673   Removed   Close to boundary</span></a>
+<a class="sourceLine" id="cb3-477" title="477"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-478" title="478"><span class="co">#&gt;         Leaf with 2 points.</span></a>
+<a class="sourceLine" id="cb3-479" title="479"><span class="co">#&gt;                     min           max          bp           p_value      action     reason</span></a>
+<a class="sourceLine" id="cb3-480" title="480"><span class="co">#&gt;                 1   0.384349600   0.50746186   0.48002519   0.51851852   Splitted         </span></a>
+<a class="sourceLine" id="cb3-481" title="481"><span class="co">#&gt;                 2   0.073362799   1.00000000          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-482" title="482"><span class="co">#&gt;                 3   0.261905783   0.41031179          NaN          NaN                    </span></a>
+<a class="sourceLine" id="cb3-483" title="483"><span class="co">#&gt;                 4   0.376933100   0.50579039   0.47760360   0.54054054   Splitted         </span></a>
+<a class="sourceLine" id="cb3-484" title="484"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-485" title="485"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-486" title="486"><span class="co">#&gt;      0 leaves to split...</span></a>
+<a class="sourceLine" id="cb3-487" title="487"><span class="co">#&gt; Enforcing constraints...</span></a>
+<a class="sourceLine" id="cb3-488" title="488"><span class="co">#&gt; -----------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb3-489" title="489"><span class="co">#&gt;            OSQP v0.6.0  -  Operator Splitting QP Solver</span></a>
+<a class="sourceLine" id="cb3-490" title="490"><span class="co">#&gt;               (c) Bartolomeo Stellato,  Goran Banjac</span></a>
+<a class="sourceLine" id="cb3-491" title="491"><span class="co">#&gt;         University of Oxford  -  Stanford University 2019</span></a>
+<a class="sourceLine" id="cb3-492" title="492"><span class="co">#&gt; -----------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb3-493" title="493"><span class="co">#&gt; problem:  variables n = 152, constraints m = 287</span></a>
+<a class="sourceLine" id="cb3-494" title="494"><span class="co">#&gt;           nnz(P) + nnz(A) = 13008</span></a>
+<a class="sourceLine" id="cb3-495" title="495"><span class="co">#&gt; settings: linear system solver = qdldl,</span></a>
+<a class="sourceLine" id="cb3-496" title="496"><span class="co">#&gt;           eps_abs = 1.0e-06, eps_rel = 1.0e-06,</span></a>
+<a class="sourceLine" id="cb3-497" title="497"><span class="co">#&gt;           eps_prim_inf = 1.0e-06, eps_dual_inf = 1.0e-06,</span></a>
+<a class="sourceLine" id="cb3-498" title="498"><span class="co">#&gt;           rho = 1.00e-01 (adaptive),</span></a>
+<a class="sourceLine" id="cb3-499" title="499"><span class="co">#&gt;           sigma = 1.00e-06, alpha = 1.60, max_iter = 100000</span></a>
+<a class="sourceLine" id="cb3-500" title="500"><span class="co">#&gt;           check_termination: on (interval 25),</span></a>
+<a class="sourceLine" id="cb3-501" title="501"><span class="co">#&gt;           scaling: on, scaled_termination: off</span></a>
+<a class="sourceLine" id="cb3-502" title="502"><span class="co">#&gt;           warm start: on, polish: on, time_limit: off</span></a>
+<a class="sourceLine" id="cb3-503" title="503"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-504" title="504"><span class="co">#&gt; iter  objective    pri res    dua res    rho        time</span></a>
+<a class="sourceLine" id="cb3-505" title="505"><span class="co">#&gt;    1  -8.7153e+01   2.85e-02   3.07e+04   1.00e-01   5.07e-03s</span></a>
+<a class="sourceLine" id="cb3-506" title="506"><span class="co">#&gt;  200  -7.6454e+01   1.54e-04   2.74e-01   1.54e+00   2.37e-02s</span></a>
+<a class="sourceLine" id="cb3-507" title="507"><span class="co">#&gt;  400  -7.6354e+01   6.17e-06   1.11e+00   4.61e+00   4.76e-02s</span></a>
+<a class="sourceLine" id="cb3-508" title="508"><span class="co">#&gt;  450  -7.6346e+01   1.20e-07   8.57e-03   4.61e+00   5.18e-02s</span></a>
+<a class="sourceLine" id="cb3-509" title="509"><span class="co">#&gt; plsh  -7.6346e+01   5.24e-16   2.74e-12  ---------   6.76e-02s</span></a>
+<a class="sourceLine" id="cb3-510" title="510"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-511" title="511"><span class="co">#&gt; status:               solved</span></a>
+<a class="sourceLine" id="cb3-512" title="512"><span class="co">#&gt; solution polish:      successful</span></a>
+<a class="sourceLine" id="cb3-513" title="513"><span class="co">#&gt; number of iterations: 450</span></a>
+<a class="sourceLine" id="cb3-514" title="514"><span class="co">#&gt; optimal objective:    -76.3461</span></a>
+<a class="sourceLine" id="cb3-515" title="515"><span class="co">#&gt; run time:             6.76e-02s</span></a>
+<a class="sourceLine" id="cb3-516" title="516"><span class="co">#&gt; optimal rho estimate: 9.95e-01</span></a>
+<a class="sourceLine" id="cb3-517" title="517"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb3-518" title="518"><span class="co">#&gt; Done !</span></a>
+<a class="sourceLine" id="cb3-519" title="519"><span class="co">#&gt; Cort copula model: 200x4-dataset and 152 leaves.</span></a></code></pre></div>
+<p>Looking at the top of the output, we see that the first thing the algorithm did was removing the second dimension due to the independence test. Now that the copula is fitted, we have access to numerous of it’s methods. Two plotting functions are exported with this model, the <code>pairs</code> function is implemented at a very low level in the class hierarchy and hence is working with almost all copulas of this package, but the <code>plot</code> function is only implemented for Cort.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">pairs</span>(model)</a></code></pre></div>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Pairs-plot of original data (in black, bottom-left corner) versus a simulation from the model (in red, top-right corner)" />
+<p class="caption">Pairs-plot of original data (in black, bottom-left corner) versus a simulation from the model (in red, top-right corner)</p>
+</div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">plot</span>(model)</a></code></pre></div>
+<div class="figure">
+<img src="data:image/png;base64,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" alt="Gray boxes representing 2-d projections of the fitted density. In red, the imputed data points." />
+<p class="caption">Gray boxes representing 2-d projections of the fitted density. In red, the imputed data points.</p>
+</div>
+<p>We see that there are some noise with point were there should not be. A bagged version of the model is accessible via the <code>CortForest</code> class, and might be able to correct these problems.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
