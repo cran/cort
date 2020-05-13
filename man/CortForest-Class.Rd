@@ -13,7 +13,9 @@ CortForest(
   min_node_size = 1,
   pseudo_data = FALSE,
   number_max_dim = NULL,
-  verbose_lvl = 2
+  verbose_lvl = 2,
+  force_grid = FALSE,
+  oob_weighting = TRUE
 )
 }
 \arguments{
@@ -31,7 +33,11 @@ CortForest(
 
 \item{number_max_dim}{The maximum number of dimension a split occurs in. Defaults to be all of the dimensions.}
 
-\item{verbose_lvl}{verbosity level : can be 0 (none) or an integer. bigger the integer bigger the output level.}
+\item{verbose_lvl}{verbosity level : can be 0 (default) or an integer. bigger the integer bigger the output level.}
+
+\item{force_grid}{boolean (default: FALSE). set to TRUE to force breakpoint to be on the n-checkerboard grid in every tree.}
+
+\item{oob_weighting}{boolean (default : TRUE) option to weight the trees with an oob criterion (otherwise they are equally weighted)}
 }
 \value{
 a CortForest object that can be fitted easily to produce a copula estimate.
@@ -40,8 +46,11 @@ a CortForest object that can be fitted easily to produce a copula estimate.
 CortForest class
 }
 \details{
-This class implements the bagging of CORT models, with an oob error minimisation in the weights.
+This class implements the bagging of CORT models, with an oob error minimisation in the weights. See O. Laverny, V. Maume-Deschamps, E. Masiello and D. Rullière (2020) for the details of this density estimation procedure.
 }
 \examples{
 (CortForest(LifeCycleSavings[,1:3],number_max_dim=2,n_trees=2))
+}
+\references{
+\insertRef{laverny2020}{cort}
 }

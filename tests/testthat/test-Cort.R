@@ -7,6 +7,8 @@ v=matrix(seq(0,1,length.out=15),ncol=5)
 w=matrix(rep(1,15),ncol=5)
 
 quiet(show(model))
+quiet(plot(model))
+quiet(pairs(model))
 
 rho = biv_rho(model)
 tau = biv_tau(model)
@@ -19,7 +21,7 @@ smaller_model = project_on_dims(model,c(1,2))
 kendall = kendall_func(model,seq(0,1,length.out=10),M=10)
 
 testthat::test_that("initialisation check of Cort are ok", {
-  testthat::expect_error(model = Cort(LifeCycleSavings,pseudo_data=TRUE,verbose_lvl = 0))
+  testthat::expect_error(Cort(LifeCycleSavings,pseudo_data=TRUE,verbose_lvl = 0))
 })
 
 testthat::test_that("the quandratic norm is coherent with the quad prod", {
@@ -72,15 +74,6 @@ testthat::test_that("rho works",{
   expect_true(all(rho <= 1) & all(rho >=-1))
   testthat::expect_equal(biv_rho(smaller_model)[2],rho[2])
 })
-
-
-
-
-
-
-
-
-
 
 
 

@@ -16,15 +16,18 @@ rClayton <- function(n,dim,alpha){
   psi(- log(val) / gam,alpha)
 }
 
-## ----dataset------------------------------------------------------------------
-if(as.numeric(version$minor)<6){
-  # the way of specifying the random number generation changed. 
-  set.seed(12,kind = "Mersenne-Twister",normal.kind = "Inversion")
-} else {
-  set.seed(12,kind = "Mersenne-Twister",normal.kind = "Inversion",sample.kind = "Rejection")
+## ----setseed------------------------------------------------------------------
+set_seed <- function(seed){
+  if(as.numeric(version$minor)<6){
+    # the way of specifying the random number generation changed. 
+    set.seed(seed,kind = "Mersenne-Twister",normal.kind = "Inversion")
+  } else {
+    set.seed(seed,kind = "Mersenne-Twister",normal.kind = "Inversion",sample.kind = "Rejection")
+  }
 }
 
-
+## ----dataset------------------------------------------------------------------
+set_seed(12)
 n = 200 # taken small to reduce runtime of the vignette.
 d = 4
 n_trees = 5 # taken small to reduce runtime of the vignette.
@@ -40,7 +43,8 @@ pairs(data,cex=0.6)
   
 
 ## ----run_cort-----------------------------------------------------------------
-(model = Cort(data,verbose_lvl=4,p_value_for_dim_red = 0.75))
+set.seed(12)
+(model = Cort(data,verbose_lvl = 1))
 
 ## ----fig.cap="Pairs-plot of original data (in black, bottom-left corner) versus a simulation from the model (in red, top-right corner)"----
 pairs(model)

@@ -12,7 +12,10 @@ Cort(
   pseudo_data = FALSE,
   number_max_dim = NULL,
   verbose_lvl = 1,
-  slsqp_options = NULL
+  slsqp_options = NULL,
+  osqp_options = NULL,
+  N = 999,
+  force_grid = FALSE
 )
 }
 \arguments{
@@ -29,6 +32,12 @@ Cort(
 \item{verbose_lvl}{numeric. set the verbosity. 0 for no ouptut and bigger you set it the most output you get.}
 
 \item{slsqp_options}{options for nloptr::slsqp to find breakpoints : you can change defaults.}
+
+\item{osqp_options}{options for the weights optimisation. You can pass a call to osqp::osqpSettings, or NULL for defaults.}
+
+\item{N}{The number of bootstrap resamples for p_values computations.}
+
+\item{force_grid}{boolean. set to TRUE to force breakpoint to be on the n-checkerboard grid.}
 }
 \value{
 a Cort object that can be fitted easily to produce a copula estimate.
@@ -37,8 +46,11 @@ a Cort object that can be fitted easily to produce a copula estimate.
 Cort class
 }
 \details{
-This class implements the CORT algorithm to a fit a multivariate copula using piece constant density.
+This class implements the CORT algorithm to a fit a multivariate copula using piece constant density. See O. Laverny, V. Maume-Deschamps, E. Masiello and D. Rullière (2020) for the details of this density estimation procedure.
 }
 \examples{
 (Cort(LifeCycleSavings[,1:3]))
+}
+\references{
+\insertRef{laverny2020}{cort}
 }

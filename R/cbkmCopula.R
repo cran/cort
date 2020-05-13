@@ -28,7 +28,7 @@ NULL
 #'
 #' Given some empirical data, and given some known copula estimation on a sub-vector of this data,
 #' the checkerboard with known margins construction consist in
-#' a conditional pattern where the checkerboard part is conditional on the known part of the copula.
+#' a conditional pattern where the checkerboard part is conditional on the known part of the copula. See the corresponding vignette for more details.
 #'
 #'
 #' @param x the data to be used
@@ -85,9 +85,7 @@ setMethod(f = "show",    signature = c(object = "cbkmCopula"),                de
 setMethod(f = "rCopula", signature = c(n = "numeric", copula = "cbkmCopula"), definition = function(n, copula) {
 
   # if n=0, return a 0xdim(copula) matrix :
-  if (n == 0) {
-    return(matrix(NA, nrow = 0, ncol = dim(copula)))
-  }
+  if (n == 0) {return(matrix(NA, nrow = 0, ncol = dim(copula)))}
 
   # get copula infos :
   J <- copula@margins
@@ -110,7 +108,7 @@ setMethod(f = "rCopula", signature = c(n = "numeric", copula = "cbkmCopula"), de
     if(nrow(possibles_boxes) == 0){
       return(rep(-10,d - p)) # NO boxes were founded -> error code.
     } else {
-      return(possibles_boxes[sample(1:nrow(possibles_boxes),size=1),-J])
+      return(possibles_boxes[resample(1:nrow(possibles_boxes),size=1),-J])
     }
   })
 
@@ -132,10 +130,6 @@ setMethod(f = "pCopula", signature = c(u = "matrix", copula = "cbkmCopula"),  de
   # this function implements the formula for the mesure of the copula
   # given in the paper.  remind that pCopula and dCopula generics already
   # transform inputs into matrices...
-
-  if (ncol(u) != dim(copula)) {
-    stop("the input value must be coer??able to a matrix with dim(copula) columns.")
-  }
 
   ######## Precalculations :
   J               <- copula@margins

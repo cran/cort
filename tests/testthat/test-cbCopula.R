@@ -54,14 +54,14 @@ testthat::test_that("dim is ok",{
 })
 
 testthat::test_that("rCopula output is ok",{
-  #testthat::expect_equivalent(rCopula(0,cbCopula(LifeCycleSavings[,1:2])),rCopula(0,archmCopula("Clayton",0.7,2)))
   testthat::expect_is(rCopula(10,cop),"matrix")
   testthat::expect_equal(ncol(rCopula(10,cop)),dim(cop))
 })
 
 testthat::test_that("dCopula is ok",{
-  testthat::expect_equal(dCopula(u,cop),rep(0.02,3))
+  testthat::expect_equal(dCopula(u,cop),rep(0,3))
   testthat::expect_error(dCopula(matrix(seq(0.3,1,length.out = 8),nrow=2),cop))
+  testthat::expect_equal(dCopula(c(0.65,0.35,0.65,0.85,0.45),cop),2000)
 })
 
 

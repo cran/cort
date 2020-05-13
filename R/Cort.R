@@ -1,4 +1,4 @@
-#' @include generics.R Box.R WeightedBox.R empiricalCopula.R
+#' @include generics.R empiricalCopula.R
 NULL
 
 .Cort = setClass(Class = "Cort", contains = "empiricalCopula",
@@ -6,7 +6,6 @@ NULL
                                   number_max_dim = "numeric",
                                   min_node_size = "numeric",
                                   verbose_lvl="numeric",
-                                  #leaves = "list",
                                   vols = "numeric",
                                   f = "numeric",
                                   p = "numeric",
@@ -21,7 +20,10 @@ NULL
                             errors <- c(errors,"data should be a matrix inside 0,1")
                           }
                           if(object@number_max_dim > ncol(object@data)){
-                            errors <- c(errors, "the maximum number of splitting dimensions should be smaller than the umber of dimensons!")
+                            errors <- c(errors, "the maximum number of splitting dimensions should be smaller than the number of dimensons!")
+                          }
+                          if(object@number_max_dim < 2){
+                            errors <- c(errros, "splits cannot be done in dimmensions smaller than 2.")
                           }
                           if (length(errors) == 0)
                             TRUE else errors
@@ -29,7 +31,7 @@ NULL
 
 #' Cort class
 #'
-#' This class implements the CORT algorithm to a fit a multivariate copula using piece constant density.
+#' This class implements the CORT algorithm to a fit a multivariate copula using piece constant density. See O. Laverny, V. Maume-Deschamps, E. Masiello and D. Rullière (2020) for the details of this density estimation procedure.
 #'
 #'
 #' @param x The data, must be provided as a matrix with each row as an observation.
@@ -39,6 +41,9 @@ NULL
 #' @param number_max_dim The maximum number of dimension a split occurs in. Defaults to be all of the dimensions.
 #' @param slsqp_options options for nloptr::slsqp to find breakpoints : you can change defaults.
 #' @param verbose_lvl numeric. set the verbosity. 0 for no ouptut and bigger you set it the most output you get.
+#' @param N The number of bootstrap resamples for p_values computations.
+#' @param osqp_options options for the weights optimisation. You can pass a call to osqp::osqpSettings, or NULL for defaults.
+#' @param force_grid boolean. set to TRUE to force breakpoint to be on the n-checkerboard grid.
 #'
 #' @name Cort-Class
 #' @title The Cort estimator
@@ -46,6 +51,9 @@ NULL
 #'
 #' @return a Cort object that can be fitted easily to produce a copula estimate.
 #' @export
+#'
+#' @references
+#' \insertRef{laverny2020}{cort}
 #'
 #' @examples
 #' (Cort(LifeCycleSavings[,1:3]))
@@ -55,335 +63,269 @@ Cort = function(x,
                 pseudo_data=FALSE,
                 number_max_dim=NULL,
                 verbose_lvl=1,
-                slsqp_options = NULL) {
+                slsqp_options = NULL,
+                osqp_options = NULL,
+                N = 999,
+                force_grid=FALSE) {
 
-  # coerce the data :
+  # Coerce the data :
   data= as.matrix(x)
   row.names(data) = NULL
   colnames(data) = NULL
-
   if(!pseudo_data){
     data = apply(data,2,rank,ties.method="random")/(nrow(data)+1)
   }
 
-  d = ncol(data)
-  #construct the main leave :
-  root = WeightedBox(Box(rep(0,d),rep(1,d)),data,min_node_size=min_node_size)
-  model = .Cort(
-    data = data,
-    p_value_for_dim_red = p_value_for_dim_red,
-    number_max_dim = min(number_max_dim,d),
-    min_node_size = min_node_size,
-    #leaves=list(root),
-    verbose_lvl=verbose_lvl,
-    dim = ncol(data),
-    vols = c(1),
-    f = c(1),
-    p = c(1),
-    a = matrix(0,ncol=d,nrow=1),
-    b = matrix(1,ncol=d,nrow=1)
-  )
+  # initialisation
+  d              = ncol(data)
+  n_obs          = nrow(data)
+  vols = f = p   = 1
+  a              = matrix(0,ncol=d,nrow=1)
+  b              = matrix(1,ncol=d,nrow=1)
+  number_max_dim = min(number_max_dim,d)
+  dd             = list(1:n_obs) # index of the data points in each leave
+  ss             = list(1:d) # dimensions of splits in each leave
 
-  # then fit and return it :
-  return(fit(model,slsqp_options))
+  # Deal with solver parameters :
+  DEFAULT_SLQP_OPTIONS = list(stopval = -Inf, xtol_rel = 1e-4, maxeval = 100000, ftol_rel = 1e-6, ftol_abs = 1e-6)
+  slsqp_options = purrr::map2(DEFAULT_SLQP_OPTIONS,names(DEFAULT_SLQP_OPTIONS),function(i,n){
+    ifelse(is.null(slsqp_options[[n]]),i,slsqp_options[[n]])
+  })
+  if(is.null(osqp_options)){
+    if (verbose_lvl>1) {
+      osqp_options = osqp::osqpSettings(max_iter = 100000L, eps_abs = 0.000001, eps_rel = 0.000001, eps_prim_inf = 0.000001, eps_dual_inf = 0.000001, verbose = TRUE)
+    } else {
+      osqp_options = osqp::osqpSettings(max_iter = 100000L, eps_abs = 0.000001, eps_rel = 0.000001, eps_prim_inf = 0.000001, eps_dual_inf = 0.000001, verbose = FALSE)
+    }
+  }
+
+  if(verbose_lvl>0) {cat("Splitting...\n")}
+
+  # Loop until there are no more splittable leaves :
+  while(TRUE){
+
+    are_splittables = purrr::map_lgl(1:nrow(a),~(length(dd[[.x]])>min_node_size) && (length(ss[[.x]])>1))
+    if(!any(are_splittables)){
+      break # This is the only way out of the while loop
+    }
+
+    if(verbose_lvl>0){
+      cat("\n    ",sum(are_splittables),"leaves to split...")
+      if(verbose_lvl>1){cat("\n")}
+    }
+
+    leaves_to_remove = numeric()
+    for(i_leaf in which(are_splittables)){
+
+      spltd = ss[[i_leaf]]
+      di    = dd[[i_leaf]]
+
+      if(verbose_lvl>1){
+        cat(paste0("        Leaf with ",length(di)," points.\n"))
+        if(verbose_lvl>2){
+          verb_df            = data.frame(min = a[i_leaf,], max = b[i_leaf,])
+          verb_df$bp         = rep(NaN,d)
+          verb_df$p_value    = rep(NaN,d)
+          verb_df$action     = rep("",d)
+          verb_df$reason     = rep("",d)
+          row.names(verb_df) = paste0("             ",1:d)
+        }
+      }
+
+      # Randomize splitting dimensions :
+
+      if(length(spltd) > number_max_dim){
+        random_dims    = resample(x =spltd, size=number_max_dim, replace=FALSE)
+        non_taken_dims = spltd[!(spltd %in% random_dims)]
+        spltd   = random_dims
+      } else{
+        non_taken_dims = numeric()
+      }
+
+      if(verbose_lvl>2){
+        verb_df$action[non_taken_dims] = "Dissmissed"
+        verb_df$reason[non_taken_dims] = "Randomly"
+      }
+
+      d_split = length(spltd)
+      if(d_split>1){
+
+        # Compute prerequisites for the optimisation of the breakpoint
+        n = length(di)
+        leaf_a = a[i_leaf,spltd]
+        leaf_b = b[i_leaf,spltd]
+        z = (t(data[di,spltd,drop=FALSE]) - leaf_a)/(leaf_b-leaf_a) # d*n
+        bin_repr = sapply(1:(2^d_split),number2binary,d_split)
+
+        #Launche optimisation routine for the breakpoint :
+        optimizer = nloptr::slsqp(
+          x0 = rowMeans(z),
+          fn = lossFunc, # coded in Rcpp
+          lower = rep(0,d_split),
+          upper = rep(1,d_split),
+          nl.info=verbose_lvl>3,
+          control=slsqp_options,
+          bin_repr = bin_repr,
+          z = z)
+
+        # Get the breakpoints and the final splitting :
+        z_bp = optimizer$par
+        bp = leaf_a + z_bp*(leaf_b-leaf_a)
+
+        if(force_grid){
+          bp = round(bp*2*(n_obs+1))/(n_obs+1)/2
+          z_bp = (bp-leaf_a)/(b-leaf_a)
+        }
+
+        # Are we going to keep the breakpoint in every splitting dimensions ?
+        z_min                     = z_bp*bin_repr
+        z_max                     = z_bp^(1-bin_repr)
+        p_values                  = cortMonteCarlo(z,z_min,z_max,as.integer(N))
+        p_values[is.na(p_values)] = 0 # really usefull ?
+        p_val_too_big             = p_values > p_value_for_dim_red
+        threshold                 = 1/ifelse(force_grid,(n_obs+1)^2,min((length(di)+1)^2,1000))
+        close_to_bound            = (z_bp< threshold) + (z_bp > 1-threshold) > 0
+        to_be_removed             = p_val_too_big+close_to_bound>0
+
+        if(verbose_lvl>2){
+          verb_df$bp[spltd]                     = bp
+          verb_df$p_value[spltd]                = p_values
+          verb_df$action[spltd[p_val_too_big]]  = "Removed"
+          verb_df$reason[spltd[p_val_too_big]]  = "Independence test"
+          verb_df$action[spltd[close_to_bound]] = "Removed"
+          verb_df$reason[spltd[close_to_bound]] = "Close to boundary"
+        }
+
+        spltd = spltd[!to_be_removed]
+        bp    = bp[!to_be_removed]
+
+        if(length(spltd) < 2){
+          if(verbose_lvl>2){
+            verb_df$action[spltd] = "Dissmissed"
+            verb_df$reason[spltd] = "Split dim < 2"
+          }
+          ss[[i_leaf]] = c(spltd,non_taken_dims)
+        } else {
+          # NOW WE FINALY SPLIT
+          leaves_to_remove = c(leaves_to_remove,i_leaf)
+          if(verbose_lvl>2){verb_df$action[spltd] = "Splitted"}
+
+          # remove the breakpoint from the data points if it's one of them :
+          are_the_breakpoint  = (colSums(t(data[di,spltd,drop=FALSE]) == bp) == length(spltd))
+          if(any(are_the_breakpoint)){
+            if(verbose_lvl>4){cat("Be carrefull, we are splitting on a point.\n")}
+            di = di[!are_the_breakpoint]
+          }
+
+          # construct new information for new leaves :
+          d_split       = length(spltd)
+          D             = 2^d_split
+          bin_repr      = sapply(1:D,number2binary,d_split)
+          new_a         = a[rep(i_leaf,D),]
+          new_b         = b[rep(i_leaf,D),]
+          new_a[,spltd] = t(bp^bin_repr * a[i_leaf,spltd]^(1-bin_repr))
+          new_b[,spltd] = t(bp^(1-bin_repr) * b[i_leaf,spltd]^bin_repr)
+
+          # store new edges and new split dims :
+          a = rbind(a,new_a)
+          b = rbind(b,new_b)
+          ss = c(ss,rep(list(c(spltd,non_taken_dims)),D))
+          # store new points assignements :
+          for (i in 1:D){
+            dd = c(dd,list(di[colSums((t(data[di, spltd, drop=FALSE]) >= new_a[i,spltd]) *
+                                                  (t(data[di, spltd, drop=FALSE]) <  new_b[i,spltd]))==d_split]))
+          }
+        }
+      }
+
+      if(verbose_lvl>2) {
+        cat(toString.data.frame(verb_df,digits=8))
+        cat("\n\n")
+      }
+    }
+    # remove information from the splitted leaves :
+    if(length(leaves_to_remove) >= 1){
+      a = a[-leaves_to_remove,]
+      b = b[-leaves_to_remove,]
+      ss = ss[-leaves_to_remove]
+      dd = dd[-leaves_to_remove]
+    }
+  }
+
+  if(verbose_lvl>0) {cat("\nEnforcing constraints...\n")}
+  n_leaves = nrow(a)
+  vols     = apply(b-a,1,prod)
+  f        = purrr::map_dbl(dd,~length(.x))/nrow(data)
+  eval_pts = purrr::map(1:d,~unique((b+a)[,.x]/2))
+  dims     = unlist(purrr::map2(eval_pts,1:d,function(x,y){rep(y,length(x))}))
+  F_vec    = unlist(eval_pts)
+  lambdas  = pmin(pmax((F_vec - t(a[,dims,drop=FALSE]))/(t(b[,dims,drop=FALSE] - a[,dims,drop=FALSE])),0),1)
+  model    = osqp::osqp(P=diag(1/vols),
+                        q=-f/vols,
+                        A=rbind(lambdas,rep(1,n_leaves),diag(n_leaves)),
+                        l=c(F_vec,1,rep(0,n_leaves)),
+                        u=c(F_vec,1,rep(Inf,n_leaves)),
+                        pars=osqp_options)
+  model$WarmStart(x=f)
+  rez = model$Solve()$x
+  p = pmax(rez,0)/sum(pmax(rez,0)) # correction for small negative weights.
+
+  # remove unnecessary names :
+  row.names(a) <- NULL
+  row.names(b) <- NULL
+  names(vols) <- NULL
+
+  if(verbose_lvl>0){cat("Done !\n")}
+  return(.Cort(data = data, p_value_for_dim_red = p_value_for_dim_red,
+               number_max_dim = number_max_dim, min_node_size = min_node_size,
+               verbose_lvl=verbose_lvl, dim = d, vols = vols, f = f, p = p, a = a, b = b))
 }
 
 setMethod(f = "show", signature = c(object = "Cort"), definition = function(object){
-            cat(paste0("Cort copula model: ",nrow(object@data),"x",ncol(object@data),"-dataset and ",
-                       nrow(object@a)," leaves."))
-          })
+  cat(paste0("Cort copula model: ",nrow(object@data),"x",ncol(object@data),"-dataset and ",
+             nrow(object@a)," leaves."))
+})
 
-setMethod(f="fit", signature = c(object="Cort"), definition = function(object,slsqp_options = NULL){
-
-            # Splitting the domain into small boxes :
-            if(object@verbose_lvl>0) {cat("Splitting...\n")}
-
-            continue = TRUE
-            leaves = list(WeightedBox(Box(rep(0,object@dim),rep(1,object@dim)),object@data,min_node_size=object@min_node_size))
-
-            while(continue){
-              are_splittables = purrr::map_lgl(leaves,is_splittable)
-
-              if(object@verbose_lvl>0){cat("\n    ",sum(are_splittables),"leaves to split...")}
-              if(object@verbose_lvl>1){cat("\n")}
-
-              if(any(are_splittables)){
-
-                # Split every box :
-                leaves = purrr::map(leaves, ~split(.x,
-                                  p_val_threshold = object@p_value_for_dim_red,
-                                  number_max_dim=object@number_max_dim,
-                                  verbose_lvl=object@verbose_lvl-1,
-                                  slsqp_options = slsqp_options
-                  )) %>%
-                  unlist(recursive = FALSE)
-
-                continue = TRUE
-              } else {
-                continue = FALSE
-              }
-            }
-
-            # Then compute the weights :
-            if(object@verbose_lvl>0) {cat("Enforcing constraints...\n")}
-
-            #  Saving some data :
-            object@vols = purrr::map_dbl(leaves,"volume")
-            object@f    = purrr::map_dbl(leaves,~nrow(.x@data))/nrow(object@data)
-            object@a    = t(sapply(leaves,function(x){x@a})) #  n,d
-            object@b    = t(sapply(leaves,function(x){x@b})) # n,d
-
-            # Building constraints :
-            n = length(leaves)
-            d = ncol(object@data)
-
-            middle_points =  # d,n
-            evaluation_points = purrr::map(1:d,~unique((object@b+object@a)[,.x]/2))
-            dims = purrr::map2(evaluation_points,1:d,function(x,y){rep(y,length(x))}) %>% unlist()
-            F_vec = unlist(evaluation_points)
-
-            lambdas = pmin(pmax((F_vec - t(object@a[,dims]))/(t(object@b[,dims] - object@a[,dims])),0),1)
-
-            # fitting the model :
-            model = build_model(P_mat = diag(1/object@vols),
-                                q_vec = -object@f/object@vols,
-                                A_mat = rbind(lambdas,rep(1,n),diag(n)),
-                                l_vec = c(F_vec,1,rep(0,n)),
-                                u_vec = c(F_vec,1,rep(Inf,n)),
-                                verbose_lvl = object@verbose_lvl-1)
-
-            model$WarmStart(x=object@f)
-            rez = model$Solve()
-
-            # saving weights, in the model and in the leaves :
-            object@p = pmax(rez$x,0)/sum(pmax(rez$x,0)) # correction for small negative weights.
-            leaves = purrr::map2(leaves, object@p,function(l,w){
-              l@weight = w
-              return(l)
-            })
-            if(object@verbose_lvl>0){cat("Done !\n")}
-            return(object)
-          })
-
-build_model <- function(P_mat,q_vec,A_mat,l_vec,u_vec,verbose_lvl=1){
-
-  if (verbose_lvl>0) {
-    return(osqp::osqp(P=P_mat,
-                      q=q_vec,
-                      A=A_mat,
-                      l=l_vec,
-                      u=u_vec,
-                      pars=osqp::osqpSettings(rho = 0.1,
-                                              sigma = 1e-06,
-                                              max_iter = 100000L,
-                                              eps_abs = 0.000001,
-                                              eps_rel = 0.000001,
-                                              eps_prim_inf = 0.000001,
-                                              eps_dual_inf = 0.000001,
-                                              alpha = 1.6,
-                                              linsys_solver = 0L, #0 for qdldl, 1 for mkl_paradiso
-                                              delta = 1e-06,
-                                              polish = TRUE,
-                                              polish_refine_iter = 100L,
-                                              verbose = TRUE,
-                                              scaled_termination = FALSE,
-                                              check_termination = 25L,
-                                              warm_start = TRUE,
-                                              scaling = 10L,
-                                              adaptive_rho = 1L,
-                                              adaptive_rho_interval = 0L,
-                                              adaptive_rho_tolerance = 5,
-                                              adaptive_rho_fraction = 0.4)))
-  } else {
-    return(osqp::osqp(P=P_mat,
-                      q=q_vec,
-                      A=A_mat,
-                      l=l_vec,
-                      u=u_vec,
-                      pars=osqp::osqpSettings(rho = 0.1,
-                                              sigma = 1e-06,
-                                              max_iter = 100000L,
-                                              eps_abs = 0.000001,
-                                              eps_rel = 0.000001,
-                                              eps_prim_inf = 0.000001,
-                                              eps_dual_inf = 0.000001,
-                                              alpha = 1.6,
-                                              linsys_solver = 0L, #0 for qdldl, 1 for mkl_paradiso
-                                              delta = 1e-06,
-                                              polish = TRUE,
-                                              polish_refine_iter = 100L,
-                                              verbose = FALSE,
-                                              scaled_termination = FALSE,
-                                              check_termination = 25L,
-                                              warm_start = TRUE,
-                                              scaling = 10L,
-                                              adaptive_rho = 1L,
-                                              adaptive_rho_interval = 0L,
-                                              adaptive_rho_tolerance = 5,
-                                              adaptive_rho_fraction = 0.4)))
-  }
-
-
-}
 
 #' @describeIn rCopula-methods Method for the class Cort
 setMethod(f = "rCopula", signature = c(n = "numeric", copula = "Cort"), definition = function(n, copula) {
-
-  # We need to simulate n rnadom vctors from the fitted model :
-  # for that, we will samples indexes of the boxes according to weights :
-  sampled_indexes = sample(1:nrow(copula@a),size=n,prob = copula@p,replace=TRUE)
-  sim = matrix(runif(n*copula@dim),nrow=n,ncol=copula@dim)
-  sim = copula@a[sampled_indexes,] + sim * (copula@b[sampled_indexes,]-copula@a[sampled_indexes,])
-  return(sim)
+  # we sample the boxes and then sample from them.
+  sampled_indexes = resample(1:nrow(copula@a),size=n,prob = copula@p,replace=TRUE)
+  matrix(runif(n*copula@dim,min = as.vector(copula@a[sampled_indexes,]),max=as.vector(copula@b[sampled_indexes,])),nrow=n,ncol=copula@dim)
 })
 
 #' @describeIn pCopula-methods Method for the class Cort
 setMethod(f = "pCopula", signature = c(u = "matrix",  copula = "Cort"), definition = function(u, copula) {
-
-  # for the c.d.f of the copula, we need to compute the measure_in per box and sum them :
-
-  # remind that pCopula and dCopula generics already transform inputs
-  # into matrices...
-
-  if (ncol(u) != dim(copula)) {
-    stop("the input value must be coercible to a matrix with dim(copula) columns.")
-  }
-
-  a = copula@a
-  b = copula@b
-  p = copula@p
-
-  n = dim(a)[1]
-  d = dim(a)[2]
-  m = dim(u)[1]
-
-  dim(u) = c(m,1,d)
-  dim(a) = c(1,n,d)
-  dim(b) = c(1,n,d)
-  dim(p) = c(1,n)
-
-  core = (u[,rep(1,n),,drop=FALSE] - a[rep(1,m),,,drop=FALSE])/(b-a)[rep(1,m),,,drop=FALSE] # m, n, d
-  measure_in = apply(pmax(pmin(core,1),0),1:2,prod) # m,n
-  return(rowSums(measure_in * p[rep(1,m),,drop=FALSE])) # m
-
-  #return(rowSums(vapply(copula@leaves,function(l){measure_in(l,u)*l@weight},FUN.VALUE=numeric(nrow(u)))))
+  # The implementation is in Rcpp.
+  pCort(copula@a,
+        copula@b,
+        copula@p,
+        u)
 })
 
 #' @describeIn dCopula-methods Method for the class Cort
 setMethod(f = "dCopula", signature = c(u = "matrix",  copula="Cort"),   definition = function(u, copula) {
-  if (ncol(u) != dim(copula)) {
-    stop("the input value must be coercible to a matrix with dim(copula) columns.")
-  }
-
-  a = copula@a
-  b = copula@b
-  p = copula@p
-  vols = copula@vols
-
-  n = dim(a)[1]
-  d = dim(a)[2]
-  m = dim(u)[1]
-
-  dim(u) = c(m,1,d)
-  dim(a) = c(1,n,d)
-  dim(b) = c(1,n,d)
-  dim(p) = c(1,n)
-  dim(vols) = c(1,n)
-
-  core = (u[,rep(1,n),,drop=FALSE] >= a[rep(1,m),,,drop=FALSE])*(u[,rep(1,n),,drop=FALSE] < b[rep(1,m),,,drop=FALSE]) # m, n, d
-  are_in = (rowSums(core,dims = 2)==d)
-  return(rowSums(are_in * p[rep(1,m),,drop=FALSE]/vols[rep(1,m),,drop=FALSE])) # m
-
-
-
-
- # return(rowSums(vapply(copula@leaves,function(l){contains(l,u,type="rllc")*l@weight},FUN.VALUE = rep(0.5,nrow(u)))))
-
+  # The implementation is in Rcpp
+  dCort(copula@a,
+        copula@b,
+        copula@p/copula@vols,
+        u)
 })
 
 #' @describeIn biv_rho-methods Method for the class Cort
 setMethod(f = "biv_rho", signature = c(copula="Cort"),   definition = function(copula) {
-  # should return the spearmann rho for this copula.
-
-  d = ncol(copula@data)
-  n = nrow(copula@a)
-  rho = diag(d)
-  p = copula@p
-  a = copula@a
-  b = copula@b
-
-  for (i in 2:d){
-    for (j in 1:(i-1)){
-      rho[j,i] <- rho[i,j] <- 12*sum(apply((2-b[,c(i,j)] - a[,c(i,j)])/2,1,prod)*p)-3
-    }
-  }
-
-  return(rho)
-
-
+  # The implementation is in Rcpp.
+  bivRho(copula@a,
+         copula@b,
+         copula@p)
 })
-
-# helper function for the kendall tau computation :
-B <- function(a,b,n_leaves,d_dim){
-
-  c = a
-  d = b
-
-  dim(a) <- c(n_leaves, 1,        d_dim)
-  dim(b) <- c(n_leaves, 1,        d_dim)
-  dim(c) <- c(1,        n_leaves, d_dim)
-  dim(d) <- c(1,        n_leaves, d_dim)
-
-  a <- a[,                rep(1,n_leaves),]
-  b <- b[,                rep(1,n_leaves),]
-  c <- c[rep(1,n_leaves),                ,]
-  d <- d[rep(1,n_leaves),                ,]
-
-  x = pmax(a,c)
-  y = pmin(b,d)
-  z = pmax(a,d)
-
-  return((y *( y/2 - c)  - x * (x/2 -c)) * (x < y) + (b - z) * (d - c) * (z < b))
-}
 
 #' @describeIn biv_tau-methods Method for the class Cort
 setMethod(f = "biv_tau", signature = c(copula="Cort"),   definition = function(copula) {
-  # dimensions :
-  d = ncol(copula@data)
-  n = nrow(copula@a)
-  dims = cbind(rep(1:d,d),rep(1:d,each=d))
-  dims = dims[dims[,1]>dims[,2],,drop=FALSE]
-  K = nrow(dims)
-
-  # Extract info from the model :
-  weights = copula@p
-  a = copula@a
-  b = copula@b
-
-  # comput ethe cross_kernel :
-  cross_B = B(a,b,n,d) # n, n, d
-  cross_B = apply(vapply(1:K,function(i){cross_B[,,dims[i,]]},cross_B[,,dims[1,]]),c(1,2,4),prod) # n,n,K
-
-  # compute boxes measures :
-  side_lengths = b - a #n, d
-  measures = t(apply(vapply(1:K,function(i){side_lengths[,dims[i,]]},side_lengths[,c(1,2)]),c(1,3),prod)) # K, n
-
-  # compute the cross_kernel of the model :
-  kernel = weights/t(measures) # n,K
-  kernel2 = kernel
-  dim(kernel) = c(n,1,K)
-  dim(kernel2) = c(1,n,K)
-
-  # finaly :
-  cross_kernel = aperm(kernel[,rep(1,n),,drop=FALSE]*kernel2[rep(1,n),,,drop=FALSE]*cross_B,c(3,1,2)) # K, n, n
-  kappa = 4 * rowSums(cross_kernel) - 1
-
-  # just put them back in a 2*2 matrix :
-  mat = diag(d)/2
-  mat[dims] <- kappa
-  mat = mat+t(mat)
-  return(mat)
-
+  # The implmeentation is in Rcpp
+  bivTau(copula@a,
+         copula@b,
+         copula@p)
 })
 
 #' @describeIn loss-methods Method for the class Cort
@@ -409,39 +351,15 @@ setMethod(f = "quad_prod_with_data", signature = c(object="Cort"),   definition 
 #' @describeIn quad_prod-methods Method for the class Cort
 setMethod(f = "quad_prod", signature = c(object="Cort",other_tree = "Cort"),   definition = function(object,other_tree) {
 
-
-  d = ncol(object@data)
-  n = nrow(object@a)
-  other_n = nrow(other_tree@a)
-
-  kern = object@p/object@vols
-  other_kern = other_tree@p/other_tree@vols
-
-  dim(kern) <- c(n,1)
-  dim(other_kern) <- c(1,other_n)
-
-  cross_kern = kern[,rep(1,other_n)]*other_kern[rep(1,n),] # n, other_n
-
-  a       = object@a
-  b       = object@b
-  other_a = other_tree@a
-  other_b = other_tree@b
-
-  dim(a) <-       c(n, 1,       d)
-  dim(b) <-       c(n, 1,       d)
-  dim(other_a) <- c(1, other_n, d)
-  dim(other_b) <- c(1, other_n, d)
-
-  a <-             a[,         rep(1,other_n),]
-  b <-             b[,         rep(1,other_n),]
-  other_a <- other_a[rep(1,n),               ,]
-  other_b <- other_b[rep(1,n),               ,]
-
-  side_lengths = pmax(pmin(b,other_b) - pmax(a,other_a),0)
-  volumes_of_intersections = apply(side_lengths,1:2,prod) # TAKES A LOT OF TIME
-
-  return(sum(cross_kern*volumes_of_intersections))
-
+  # The implementation is in Rcpp
+  return(quadProd(
+    object@a,
+    object@b,
+    object@p/object@vols,
+    other_tree@a,
+    other_tree@b,
+    other_tree@p/other_tree@vols
+  ))
 })
 
 #' @param M the number of simulations
@@ -461,58 +379,22 @@ setMethod(f = "kendall_func", signature = c(object="Cort"),   definition = funct
 #' @describeIn project_on_dims-methods Method for the class Cort
 setMethod(f = "project_on_dims", signature = c(object="Cort"),   definition = function(object,dims) {
 
-  # this function should project the tree on a smaller subset of dimensions.
-  # for the moment only sets of 2 dimensions are supported, although bigger sets might be used;
-  if(length(dims) != 2){
-    stop("only two-dimensional projection are supported for the moment")
-  }
+  # The implementation is in Rcpp
+  cpp_result = projectOnTwoDims(a=t(object@a),
+                                b=t(object@b),
+                                p=object@p,
+                                f=object@f,
+                                dims=dims,
+                                data = object@data[,dims],
+                                kern = object@p/object@vols)
 
-  # first, getting the edges of the bins :
-  a       = object@a
-  b       = object@b
-  p_over_vol = object@p/object@vols
-  n = nrow(a)
-  d = ncol(a)
-
-  points = rbind(a,b)
-  edges = purrr::map(dims,function(i){
-    sort(unique(points[,i]))
-  }) # a list; dimension by dimensions, of the breakpoints in the dimensions we want to keep.
-
-  # now we need ot construct the boxes :
-  ks = 1:(length(edges[[1]])-1)
-  ls = 1:(length(edges[[2]])-1)
-
-  new_n = length(ks)*length(ls)
-  new_a = matrix(0,nrow=new_n,ncol=2)
-  new_b = new_a
-  i=1
-  for (k in ks){
-    for (l in ls){
-      new_a[i,] <- c(edges[[1]][k  ], edges[[2]][l  ])
-      new_b[i,] <- c(edges[[1]][k+1], edges[[2]][l+1])
-      i = i+1
-    }
-  }
-
-  a_complete = rep(0,d)
-  b_complete = rep(1,d)
-
-  leaves = purrr::map(1:new_n,~Box(a = new_a[.x,],b=new_b[.x,]))
-
-  # set things :
-  object@data = object@data[,dims]
-  object@f = purrr::map_dbl(leaves,function(l){sum(contains(l,object@data))})/nrow(object@data)
-  object@p = purrr::map_dbl(leaves,function(l){
-      a_complete[dims] <- l@a
-      b_complete[dims] <- l@b
-      return(sum(apply(pmax(pmin(t(b),b_complete)-pmax(t(a),a_complete),0),2,prod)*p_over_vol))
-    })
   object@dim = 2
-  object@a = new_a
-  object@b = new_b
-  object@vols = apply((new_b - new_a),1,prod)
-
+  object@data = object@data[,dims]
+  object@f = cpp_result$f
+  object@p = cpp_result$p
+  object@a = cpp_result$a
+  object@b = cpp_result$b
+  object@vols = cpp_result$vols
   return(object)
 })
 
@@ -557,7 +439,7 @@ plot.Cort <- function(x,...){
       if(i != j){
         xx = dd[(dd$dim_x == i)&(dd$dim_y==j),]
         graphics::rect(xx$ymin,xx$xmin,xx$ymax,xx$xmax,col=grDevices::gray(1-xx$col),border=NA,density=NA)
-        graphics::points(x@data[,i],x@data[,j],cex=0.7,col="red")
+        graphics::points(x@data[,j],x@data[,i],cex=0.5,col="red")
       }
     }
   }
