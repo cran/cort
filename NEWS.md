@@ -1,3 +1,14 @@
+# cort 0.3.2
+
+## Minor improvements and fixes
+
+* Improved documentation
+* Fixed buggy automated tests on CortForest
+* Added simulation script to the documentation of the datasets
+* Cleared up pkgdown reference page
+* Cleaned up some vignettes
+* README fixes.
+
 # cort 0.3.1
 
 ## Breaking changes

@@ -27,7 +27,10 @@
 
 #' CortForest class
 #'
-#' This class implements the bagging of CORT models, with an oob error minimisation in the weights. See O. Laverny, V. Maume-Deschamps, E. Masiello and D. Rullière (2020) for the details of this density estimation procedure.
+#' This class implements the bagging of CORT models, with an out-of-bag error minimisation in the weights.
+#'
+#'
+#' See O. Laverny, V. Maume-Deschamps, E. Masiello and D. Rullière (2020) for the details of this density estimation procedure, and `vignettes(package='cort')` for examples of usecases.
 #'
 #'
 #' @param x The data, must be provided as a matrix with each row as an observation.
@@ -42,10 +45,25 @@
 #' @param oob_weighting boolean (default : TRUE) option to weight the trees with an oob criterion (otherwise they are equally weighted)
 #'
 #' @name CortForest-Class
-#' @title Bagged Cort estimates
+#' @title Bagged Cort copulas
 #' @rdname CortForest-Class
 #'
-#' @return a CortForest object that can be fitted easily to produce a copula estimate.
+#' @return An instance of the `CortForest` S4 class. The object represent the fitted copula and can be used through several methods to query classical (r/d/p/v)Copula methods, constraint influence, etc.
+#' Beside returning some inputted parameters, notable slots are :
+#'
+#' \itemize{
+#'  \item{`trees` }{A list of Cort objects representing each fitted tree in the forest.}
+#'  \item{`weights` }{The weigths of each tree.}
+#'  \item{`indexes` }{The indexes of data points that were selected for fitting the trees}
+#'  \item{`pmf` }{The density of each tree on data points}
+#'  \item{`norm_matrix` }{The matrix of scalar product between trees}
+#'  \item{`oob_pmf` }{The density of each tree on data points it did not see during fitting}
+#'  \item{`oob_kl` }{The out-of-bag Kullback-Leibler divergence of each tree }
+#'  \item{`oob_ise` }{The out-of-bag Integrated Square Error of each tree}
+#' }
+#'
+#' More details about these slots can be found in the reference.
+#'
 #' @export
 #'
 #' @references
@@ -63,6 +81,9 @@ CortForest = function(x,
                 verbose_lvl=2,
                 force_grid = FALSE,
                 oob_weighting = TRUE) {
+
+  # Furrr options to set seed :
+  FO = furrr::furrr_options(seed=TRUE)
 
   # Deal with verbosity :
   showing = ifelse(verbose_lvl <= 1,"","========================")
@@ -88,7 +109,7 @@ CortForest = function(x,
          pseudo_data=TRUE,
          number_max_dim=number_max_dim,
          verbose_lvl=0,
-         force_grid = force_grid)},.progress=TRUE)
+         force_grid = force_grid)},.progress=TRUE,.options = FO)
 
   # Compute the stats
   if(verbose_lvl>0){cat(showing,"Computing statistics...\n")}
@@ -106,7 +127,7 @@ CortForest = function(x,
   norm_matrix = diag(purrr::map_dbl(trees,quad_norm))/2
   idx = data.frame(nrow = rep(1:n_trees,n_trees),ncol=rep(1:n_trees,each=n_trees))
   idx = idx[idx$nrow < idx$ncol,]
-  norm_matrix[as.matrix(idx)] <- furrr::future_map_dbl(1:nrow(idx),function(i){quad_prod(trees[[idx[i,1]]],trees[[idx[i,2]]])},.progress=TRUE)
+  norm_matrix[as.matrix(idx)] <- furrr::future_map_dbl(1:nrow(idx),function(i){quad_prod(trees[[idx[i,1]]],trees[[idx[i,2]]])},.progress=TRUE,.options = FO)
   norm_matrix = norm_matrix + t(norm_matrix)
 
   # Fitting weights

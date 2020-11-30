@@ -30,8 +30,6 @@ make_k_fold_samples <- function(data,k = nb_fold,n_repeat = 1){
       
       sapply(1:k,function(i){
         test_index <- which(folds==i,arr.ind=TRUE)
-        test <- 
-        train <- 
         return(list(train = data[-test_index,], 
                     test = data[test_index,]))
       },simplify=FALSE)
@@ -67,19 +65,11 @@ pEmpCop <- function(points,data=df){
 
 
 ## -----------------------------------------------------------------------------
-
-# We need to calculate for each copula it's error.
-
-
 error <- function(cop,i,j){
-  
   test <- samples[[i]]$test
-  
-  
   return(sum((pCopula(test,cop) - pEmpCop(test))^2))
   
 }
-
 
 errors <- sapply(1:(nb_replicates*nb_fold),function(i){
   sapply(1:nb_cop,function(j){

@@ -16,18 +16,8 @@ rClayton <- function(n,dim,alpha){
   psi(- log(val) / gam,alpha)
 }
 
-## ----setseed------------------------------------------------------------------
-set_seed <- function(seed){
-  if(as.numeric(version$minor)<6){
-    # the way of specifying the random number generation changed. 
-    set.seed(seed,kind = "Mersenne-Twister",normal.kind = "Inversion")
-  } else {
-    set.seed(seed,kind = "Mersenne-Twister",normal.kind = "Inversion",sample.kind = "Rejection")
-  }
-}
-
 ## ----dataset------------------------------------------------------------------
-set_seed(12)
+set.seed(12)
 n = 200 # taken small to reduce runtime of the vignette.
 d = 4
 n_trees = 5 # taken small to reduce runtime of the vignette.
@@ -37,7 +27,6 @@ data <- matrix(nrow=n,ncol=d)
 data[,c(1,4,3)] = rClayton(n=n,dim=d-1,alpha=7)
 data[,2] = runif(n)
 data[,3] <- 1 - data[,3]
-
 
 pairs(data,cex=0.6)
   
